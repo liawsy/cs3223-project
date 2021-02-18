@@ -7,6 +7,7 @@ package qp.optimizer;
 import qp.operators.*;
 import qp.utils.*;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -89,7 +90,7 @@ public class RandomInitialPlan {
             /** Read the schema of the table from tablename.md file
              ** md stands for metadata
              **/
-            String path = "..\\testcases\\";
+            String path = ".." + File.separator + "testcases" + File.separator;
             String filename = path + tabname + ".md";
             
             try {

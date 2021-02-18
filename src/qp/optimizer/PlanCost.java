@@ -12,6 +12,7 @@ import qp.utils.Condition;
 import qp.utils.Schema;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -207,7 +208,7 @@ public class PlanCost {
      **/
     protected long getStatistics(Scan node) {
         String tablename = node.getTabName();
-        String path = "..\\testcases\\";
+        String path = ".." + File.separator + "testcases" + File.separator;
         String filename = path + tablename + ".stat";
         Schema schema = node.getSchema();
         int numAttr = schema.getNumCols();
