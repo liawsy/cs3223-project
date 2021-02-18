@@ -89,7 +89,9 @@ public class RandomInitialPlan {
             /** Read the schema of the table from tablename.md file
              ** md stands for metadata
              **/
-            String filename = tabname + ".md";
+            String path = "..\\testcases\\";
+            String filename = path + tabname + ".md";
+            
             try {
                 ObjectInputStream _if = new ObjectInputStream(new FileInputStream(filename));
                 Schema schm = (Schema) _if.readObject();

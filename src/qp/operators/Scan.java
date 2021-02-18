@@ -30,7 +30,7 @@ public class Scan extends Operator {
     public Scan(String tabname, int type) {
         super(type);
         this.tabname = tabname;
-        filename = tabname + ".tbl";
+        filename = "..\\testcases\\" + tabname + ".tbl";
     }
 
     public String getTabName() {

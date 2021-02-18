@@ -207,14 +207,16 @@ public class PlanCost {
      **/
     protected long getStatistics(Scan node) {
         String tablename = node.getTabName();
-        String filename = tablename + ".stat";
+        String path = "..\\testcases\\";
+        String filename = path + tablename + ".stat";
         Schema schema = node.getSchema();
         int numAttr = schema.getNumCols();
         BufferedReader in = null;
         try {
+            System.out.println(filename);
             in = new BufferedReader(new FileReader(filename));
         } catch (IOException io) {
-            System.out.println("Error in opening file" + filename);
+            System.out.println("Error in opening file " + filename);
             System.exit(1);
         }
         String line = null;
