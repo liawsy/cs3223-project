@@ -2,3 +2,6 @@ testcases/*.md
 testcases/*.stat
 testcases/*.tbl
 testcases/*.txt
+
+*.in
+*.out
