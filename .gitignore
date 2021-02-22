@@ -5,3 +5,5 @@ testcases/*.txt
 
 *.in
 *.out
+
+**/*.class
