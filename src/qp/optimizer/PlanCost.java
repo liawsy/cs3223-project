@@ -12,7 +12,6 @@ import qp.utils.Condition;
 import qp.utils.Schema;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -208,16 +207,14 @@ public class PlanCost {
      **/
     protected long getStatistics(Scan node) {
         String tablename = node.getTabName();
-        String path = ".." + File.separator + "testcases" + File.separator;
-        String filename = path + tablename + ".stat";
+        String filename = tablename + ".stat";
         Schema schema = node.getSchema();
         int numAttr = schema.getNumCols();
         BufferedReader in = null;
         try {
-            System.out.println(filename);
             in = new BufferedReader(new FileReader(filename));
         } catch (IOException io) {
-            System.out.println("Error in opening file " + filename);
+            System.out.println("Error in opening file" + filename);
             System.exit(1);
         }
         String line = null;
