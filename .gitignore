@@ -1,7 +1,11 @@
-testcases/*.md
-testcases/*.stat
-testcases/*.tbl
-testcases/*.txt
+**/*.md
+**/*.stat
+**/*.tbl
+**/*.txt
+**/*.class
 
 *.in
 *.out
+
+.classpath
+.project
