@@ -1,5 +1,4 @@
-**/*.class
-
+classes/*.class
 classes/*.md
 classes/*.stat
 classes/*.tbl
