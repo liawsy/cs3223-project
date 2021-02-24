@@ -1,3 +1,9 @@
+classes/*.class
+classes/*.md
+classes/*.stat
+classes/*.tbl
+classes/*.txt
+
 testcases/*.md
 testcases/*.stat
 testcases/*.tbl
@@ -5,3 +11,6 @@ testcases/*.txt
 
 *.in
 *.out
+
+.classpath
+.project

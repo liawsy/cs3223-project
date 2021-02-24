@@ -9,7 +9,6 @@ import qp.utils.Schema;
 import qp.utils.Tuple;
 
 import java.io.EOFException;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -31,7 +30,7 @@ public class Scan extends Operator {
     public Scan(String tabname, int type) {
         super(type);
         this.tabname = tabname;
-        filename = ".." + File.separator + "testcases" + File.separator + tabname + ".tbl";
+        filename = tabname + ".tbl";
     }
 
     public String getTabName() {
