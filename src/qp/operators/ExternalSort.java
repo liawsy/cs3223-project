@@ -3,7 +3,9 @@
  */
 package qp.operators;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
@@ -13,10 +15,10 @@ import qp.utils.Schema;
 import qp.utils.Tuple;
 
 public class ExternalSort extends Operator {
-    Operator base;      // base table to sort
-    Schema schema;      // base table schema
-    int batchSize;      // number of tuples per batch
-    int numBuffer;      // number of buffer available
+    Operator base;          // base table to sort
+    Schema schema;          // base table schema
+    int tuplesPerBatch;     // number of tuples per batch
+    int numBuffer;          // number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>();    // index of attributes to sort on
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
@@ -41,11 +43,11 @@ public class ExternalSort extends Operator {
             return false;
         }
         
-        // number of tuples per batch
+        // find number of tuples per batch
         int tupleSize = schema.getTupleSize();
-        batchSize = Batch.getPageSize() / tupleSize;
+        tuplesPerBatch = Batch.getPageSize() / tupleSize;
 
-        // generate sorted runs based on batch size
+        // generate sorted runs 
         int numSortedRun = createSortedRuns();
 
         // merge sorted runs 
@@ -90,21 +92,56 @@ public class ExternalSort extends Operator {
 
     public void mergeSortedRuns(int numSortedRun) {
         int numInputBuffer = numBuffer - 1;
-        int numRunsLeft = numSortedRun;
+        int numRunsToMerge = numSortedRun;
         int passId = 1;
         
-        while (numRunsLeft > 1) {
+        while (numRunsToMerge > 1) {
             // k way merge
-            for (int start = 0; start < numRunsLeft; start = start + numInputBuffer) {
-                int end = Math.min(start + numInputBuffer, numRunsLeft);
+            for (int start = 0; start < numRunsToMerge; start = start + numInputBuffer) {
+                int end = Math.min(start + numInputBuffer - 1, numRunsToMerge);
                 mergeRunsBetween(start, end, passId, numInputBuffer);
             }
-            numRunsLeft = (int) Math.ceil(numRunsLeft / numInputBuffer);
+            numRunsToMerge = (int) Math.ceil(numRunsToMerge / numInputBuffer);
             passId++;
         }
     }
 
-    public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer){
+    public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer) {
+        int numRuns = end - start + 1;
+        // tracks input streams of Tuple objects from file
+        ObjectInputStream[] inputStreams = new ObjectInputStream[numRuns];
+        // tracks if stream has ended
+        boolean[] inputEos = new boolean[numRuns];
+        // tracks buffer pages read in from input stream
+        Batch[] inputBatches = new Batch[numRuns];
+
+        // initial population of buffers
+        for (int i = start; i <= end; i++) {
+            int arrIndex = i % numRuns;
+            // 1. set up ObjectInputStreams to read from file
+            try {
+                FileInputStream fileIn = new FileInputStream("sorted_run_" + i + "_pass_" + passId);
+                ObjectInputStream inStream = new ObjectInputStream(fileIn);
+                inputStreams[arrIndex] = inStream;
+                inputEos[arrIndex] = false;
+                
+                // 2. put as many tuples as possible into batch
+                Batch inputBatch = new Batch(tuplesPerBatch);
+                for (int j = 0; j < tuplesPerBatch; j++) {
+                    inputBatch.add((Tuple) inStream.readObject());
+                }
+                inputBatches[arrIndex] = inputBatch;
+            
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        
+        }
+        
+        // 3. compare across the first tuple of all batch
+        // 4. all smallest to output buffer + write to file
+        // when inputBatch[i] is empty -> read in another batch until eos
+
 
     }
 
@@ -125,15 +162,16 @@ public class ExternalSort extends Operator {
         return result;
     }
 
-    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunNum, int passId) {
+    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
         try {
             // add to file
-            FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunNum + "_pass_" + passId);
+            FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunId + "_pass_" + passId);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
             }
             objectOut.close();
+            fileOut.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -144,7 +182,7 @@ public class ExternalSort extends Operator {
      */
 
     public Batch next() {
-        return new Batch(batchSize);
+        return new Batch(tuplesPerBatch);
     }
 
     /**
