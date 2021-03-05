@@ -80,12 +80,32 @@ public class ExternalSort extends Operator {
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
             
-            // generating of sorted runs = phase 0 
+            // generating of sorted runs = pass 0 
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
                 
             inputBatch = base.next();
         }
         return numSortedRun;
+    }
+
+    public void mergeSortedRuns(int numSortedRun) {
+        int numInputBuffer = numBuffer - 1;
+        int numRunsLeft = numSortedRun;
+        int passId = 1;
+        
+        while (numRunsLeft > 1) {
+            // k way merge
+            for (int start = 0; start < numRunsLeft; start = start + numInputBuffer) {
+                int end = Math.min(start + numInputBuffer, numRunsLeft);
+                mergeRunsBetween(start, end, passId, numInputBuffer);
+            }
+            numRunsLeft = (int) Math.ceil(numRunsLeft / numInputBuffer);
+            passId++;
+        }
+    }
+
+    public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer){
+
     }
 
     /**
@@ -104,11 +124,11 @@ public class ExternalSort extends Operator {
         }
         return result;
     }
-    
-    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunNum, int passNum) {
+
+    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunNum, int passId) {
         try {
             // add to file
-            FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunNum + "_pass_" + passNum);
+            FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunNum + "_pass_" + passId);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
@@ -117,23 +137,6 @@ public class ExternalSort extends Operator {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-    
-    public void mergeSortedRuns(int numSortedRun) {
-        int numBufferAvail = numBuffer = 1;
-        int numRunsUnsorted = numSortedRun;
-        int passId = 0;
-        
-        while (numRunsUnsorted > 1) {
-            kWayMerge(numRunsUnsorted, passId, numBufferAvail);
-            double div = numRunsUnsorted / numBufferAvail;
-            numRunsUnsorted = (int) Math.ceil(div);
-            passId++;
-        }
-    }
-
-    public void kWayMerge(int numRunsUnsorted, int passId, int numBufferAvail) {
-        
     }
 
     /**
