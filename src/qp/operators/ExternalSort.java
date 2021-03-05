@@ -19,14 +19,13 @@ public class ExternalSort extends Operator {
     int numBuffer;      // number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>();    // index of attributes to sort on
 
-    public ExternalSort(Operator base, int numBuffer) {
+    public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
         super(OpType.SORT);
 
         this.base = base;
         this.schema = base.schema;
         this.numBuffer = numBuffer;
 
-        ArrayList<Attribute> attributeList = schema.getAttList();
         for (int i = 0; i < attributeList.size(); i++) {
             Attribute attribute = attributeList.get(i);
             attributeIndices.add(schema.indexOf(attribute));
@@ -47,17 +46,18 @@ public class ExternalSort extends Operator {
         batchSize = Batch.getPageSize() / tupleSize;
 
         // generate sorted runs based on batch size
-        createSortedRuns();
+        int numSortedRun = createSortedRuns();
 
         // merge sorted runs 
-        mergeSortedRuns();
+        mergeSortedRuns(numSortedRun);
 
         return true;
     }
 
-    public void createSortedRuns() {
+    public int createSortedRuns() {
     
         Batch inputBatch = base.next();
+        int numSortedRun = 0;
         
         // while the table is not empty
         while (inputBatch != null) {
@@ -67,20 +67,25 @@ public class ExternalSort extends Operator {
             // 1 buffer = 1 batch = 1 page
             // read in as many batches as number of buffers
             for (int i = 0; i < numBuffer; i++) {
+                // adds all tuples from input batch to sorted run
+                // same as filling up one buffer
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
                 if (base.next() != null) {
                     inputBatch = base.next();
                 }
             }
+            numSortedRun++;
 
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
-            // write to file
-            writeTuplesToFile(tuplesInSortedRun);
+            
+            // generating of sorted runs = phase 0 
+            writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
                 
             inputBatch = base.next();
         }
+        return numSortedRun;
     }
 
     /**
@@ -99,15 +104,11 @@ public class ExternalSort extends Operator {
         }
         return result;
     }
-
-    /**
-     * 
-     * @param sortedTuples is the array of sorted runs needed to be written to file
-     */
-    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples) {
+    
+    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunNum, int passNum) {
         try {
             // add to file
-            FileOutputStream fileOut = new FileOutputStream("filename");
+            FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunNum + "_pass_" + passNum);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
@@ -118,8 +119,21 @@ public class ExternalSort extends Operator {
         }
     }
     
-    public void mergeSortedRuns() {
+    public void mergeSortedRuns(int numSortedRun) {
+        int numBufferAvail = numBuffer = 1;
+        int numRunsUnsorted = numSortedRun;
+        int passId = 0;
+        
+        while (numRunsUnsorted > 1) {
+            kWayMerge(numRunsUnsorted, passId, numBufferAvail);
+            double div = numRunsUnsorted / numBufferAvail;
+            numRunsUnsorted = (int) Math.ceil(div);
+            passId++;
+        }
+    }
 
+    public void kWayMerge(int numRunsUnsorted, int passId, int numBufferAvail) {
+        
     }
 
     /**
@@ -134,6 +148,8 @@ public class ExternalSort extends Operator {
      * Close the operator
      */
     public boolean close() {
+        super.close();
+        
         return true;
     }
 
