@@ -137,6 +137,8 @@ public class ExternalSort extends Operator {
         }
         
         Batch outputBatch = new Batch(tuplesPerBatch);
+        int outputRunId = 0;
+        int outputPassId = passId + 1;
         // while there is still a stream that has not reached eos
         while (!reachedEndOfStreams(inputEos)) {
             // 3. compare across the first tuple of all batch
@@ -171,16 +173,22 @@ public class ExternalSort extends Operator {
                 }
             }
             
-            // 4. add smallest to output buffer
             if (outputBatch.isFull()) {
                 // if buffer is full, write to file then clear the buffer
+                ArrayList<Tuple> tuplesToWrite = outputBatch.getTuples();
+                writeTuplesToFile(tuplesToWrite, outputRunId, outputPassId);
+                outputBatch.clear();
+                outputRunId++;
             }
+            // 4. add smallest to output buffer
             outputBatch.add(minTuple);
 
-            // remove min tuple
+            // 5. remove min tuple
             try {    
                 inputBatches[minBatch].remove(0);
                 inputBatches[minBatch].add((Tuple) inputStreams[minBatch].readObject());
+                // todo: check if stream can be read
+                // set eos to true if stream ends
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -217,7 +225,7 @@ public class ExternalSort extends Operator {
         return result;
     }
 
-    public void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
+    private void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
         try {
             // add to file
             FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunId + "_pass_" + passId);

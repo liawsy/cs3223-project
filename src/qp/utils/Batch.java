@@ -29,6 +29,10 @@ public class Batch implements Serializable {
         tuples = new ArrayList<>(MAX_SIZE);
     }
 
+    public void clearTuples() {
+        tuples.clear();
+    }
+
     public ArrayList<Tuple> getTuples() {
         return tuples;
     }
