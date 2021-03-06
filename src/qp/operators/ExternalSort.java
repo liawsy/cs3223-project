@@ -15,11 +15,11 @@ import qp.utils.Schema;
 import qp.utils.Tuple;
 
 public class ExternalSort extends Operator {
-    Operator base;          // base table to sort
-    Schema schema;          // base table schema
-    int tuplesPerBatch;     // number of tuples per batch
-    int numBuffer;          // number of buffer available
-    ArrayList<Integer> attributeIndices = new ArrayList<>();    // index of attributes to sort on
+    Operator base; // base table to sort
+    Schema schema; // base table schema
+    int tuplesPerBatch; // number of tuples per batch
+    int numBuffer; // number of buffer available
+    ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
         super(OpType.SORT);
@@ -42,30 +42,28 @@ public class ExternalSort extends Operator {
         if (!base.open()) {
             return false;
         }
-        
+
         // find number of tuples per batch
         int tupleSize = schema.getTupleSize();
         tuplesPerBatch = Batch.getPageSize() / tupleSize;
 
-        // generate sorted runs 
         int numSortedRun = createSortedRuns();
 
-        // merge sorted runs 
         mergeSortedRuns(numSortedRun);
 
         return true;
     }
 
     public int createSortedRuns() {
-    
+
         Batch inputBatch = base.next();
         int numSortedRun = 0;
-        
+
         // while the table is not empty
         while (inputBatch != null) {
 
             ArrayList<Tuple> tuplesInSortedRun = new ArrayList<Tuple>();
-            
+
             // 1 buffer = 1 batch = 1 page
             // read in as many batches as number of buffers
             for (int i = 0; i < numBuffer; i++) {
@@ -81,10 +79,10 @@ public class ExternalSort extends Operator {
 
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
-            
-            // generating of sorted runs = pass 0 
+
+            // generating of sorted runs => pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
-                
+
             inputBatch = base.next();
         }
         return numSortedRun;
@@ -94,7 +92,7 @@ public class ExternalSort extends Operator {
         int numInputBuffer = numBuffer - 1;
         int numRunsToMerge = numSortedRun;
         int passId = 1;
-        
+
         while (numRunsToMerge > 1) {
             // k way merge
             for (int start = 0; start < numRunsToMerge; start = start + numInputBuffer) {
@@ -107,6 +105,7 @@ public class ExternalSort extends Operator {
     }
 
     public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer) {
+        // number of runs to merge
         int numRuns = end - start + 1;
         // tracks input streams of Tuple objects from file
         ObjectInputStream[] inputStreams = new ObjectInputStream[numRuns];
@@ -115,7 +114,7 @@ public class ExternalSort extends Operator {
         // tracks buffer pages read in from input stream
         Batch[] inputBatches = new Batch[numRuns];
 
-        // initial population of buffers
+        // initial population of buffers(batches)
         for (int i = start; i <= end; i++) {
             int arrIndex = i % numRuns;
             // 1. set up ObjectInputStreams to read from file
@@ -127,7 +126,7 @@ public class ExternalSort extends Operator {
                 
                 // 2. put as many tuples as possible into batch
                 Batch inputBatch = new Batch(tuplesPerBatch);
-                for (int j = 0; j < tuplesPerBatch; j++) {
+                while (!inputBatch.isFull()) {
                     inputBatch.add((Tuple) inStream.readObject());
                 }
                 inputBatches[arrIndex] = inputBatch;
@@ -135,14 +134,70 @@ public class ExternalSort extends Operator {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        
         }
         
-        // 3. compare across the first tuple of all batch
-        // 4. all smallest to output buffer + write to file
-        // when inputBatch[i] is empty -> read in another batch until eos
+        Batch outputBatch = new Batch(tuplesPerBatch);
+        // while there is still a stream that has not reached eos
+        while (!reachedEndOfStreams(inputEos)) {
+            // 3. compare across the first tuple of all batch
 
+            Tuple minTuple = null;
+            int minPtr = 0;   // points to the first non empty tuple
+            int minBatch = 0; // points to the current batch that minTuple belongs to
+            
+            // sets the first tuple of the first non empty batch as minTuple
+            for (int i = 0; i < numRuns; i++) {
+                if (!inputBatches[i].isEmpty()) {
+                    minTuple = inputBatches[i].get(0); 
+                    minPtr = i;
+                    break;
+                }
+            }
 
+            // looks through the rest of the batches
+            for (int i = minPtr; i < numRuns; i++) {
+                Batch currBatch = inputBatches[i];
+                
+                // cannot get from buffers that are empty
+                if (currBatch.isEmpty()) {
+                    continue;
+                }
+
+                Tuple currTuple = currBatch.get(0);
+                
+                if (tupleComparator(minTuple, currTuple) < 0) {
+                    minTuple = currTuple;
+                    minBatch = i;
+                }
+            }
+            
+            // 4. add smallest to output buffer
+            if (outputBatch.isFull()) {
+                // if buffer is full, write to file then clear the buffer
+            }
+            outputBatch.add(minTuple);
+
+            // remove min tuple
+            try {    
+                inputBatches[minBatch].remove(0);
+                inputBatches[minBatch].add((Tuple) inputStreams[minBatch].readObject());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param inputEos
+     * @return true if has reached end of streams for all streams, false if there are streams that have not ended
+     */
+    private boolean reachedEndOfStreams(boolean[] inputEos) {
+        boolean result = true;
+        for (boolean x : inputEos) {
+            result = result && x;
+        }
+        return result;
     }
 
     /**
@@ -177,21 +232,12 @@ public class ExternalSort extends Operator {
         }
     }
 
-    /**
-     * Sorts next tuple from operator
-     */
-
     public Batch next() {
         return new Batch(tuplesPerBatch);
     }
 
-    /**
-     * Close the operator
-     */
     public boolean close() {
         super.close();
-        
         return true;
     }
-
 }
