@@ -183,12 +183,18 @@ public class ExternalSort extends Operator {
             // 4. add smallest to output buffer
             outputBatch.add(minTuple);
 
-            // 5. remove min tuple
+            // 5. remove min tuple and read a new tuple into batch
             try {    
                 inputBatches[minBatch].remove(0);
-                inputBatches[minBatch].add((Tuple) inputStreams[minBatch].readObject());
-                // todo: check if stream can be read
-                // set eos to true if stream ends
+                ObjectInputStream stream = inputStreams[minBatch];
+                // check if stream can be read
+                if (stream.available() == 0) {
+                    // set eos to true if stream ends
+                    inputEos[minBatch] = true;
+                    return;
+                }
+                inputBatches[minBatch].add((Tuple) stream.readObject());
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }
