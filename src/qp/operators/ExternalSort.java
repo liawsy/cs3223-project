@@ -68,7 +68,6 @@ public class ExternalSort extends Operator {
             // read in as many batches as number of buffers
             for (int i = 0; i < numBuffer; i++) {
                 // adds all tuples from input batch to sorted run
-                // same as filling up one buffer
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
                 if (base.next() != null) {
@@ -80,7 +79,7 @@ public class ExternalSort extends Operator {
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
 
-            // generating of sorted runs => pass 0
+            // generating of sorted runs => considered as pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
 
             inputBatch = base.next();
@@ -91,15 +90,15 @@ public class ExternalSort extends Operator {
     public void mergeSortedRuns(int numSortedRun) {
         int numInputBuffer = numBuffer - 1;
         int numRunsToMerge = numSortedRun;
-        int passId = 1;
+        int passId = 0;
 
         while (numRunsToMerge > 1) {
             // k way merge
             for (int start = 0; start < numRunsToMerge; start = start + numInputBuffer) {
-                int end = Math.min(start + numInputBuffer - 1, numRunsToMerge);
+                int end = Math.min(start + numInputBuffer, numRunsToMerge) - 1;
                 mergeRunsBetween(start, end, passId, numInputBuffer);
             }
-            numRunsToMerge = (int) Math.ceil(numRunsToMerge / numInputBuffer);
+            numRunsToMerge = (int) Math.ceil(numRunsToMerge / (double) numInputBuffer);
             passId++;
         }
     }
@@ -191,6 +190,7 @@ public class ExternalSort extends Operator {
                 if (stream.available() == 0) {
                     // set eos to true if stream ends
                     inputEos[minBatch] = true;
+                    stream.close();
                     return;
                 }
                 inputBatches[minBatch].add((Tuple) stream.readObject());
@@ -247,6 +247,8 @@ public class ExternalSort extends Operator {
     }
 
     public Batch next() {
+        // return next batch of sorted tuple
+        
         return new Batch(tuplesPerBatch);
     }
 
