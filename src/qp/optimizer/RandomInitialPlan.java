@@ -47,22 +47,16 @@ public class RandomInitialPlan {
      * prepare initial plan for the query
      **/
     public Operator prepareInitialPlan() {
-
-        if (sqlquery.isDistinct()) {
-            System.err.println("Distinct is not implemented.");
-            System.exit(1);
-        }
-
         if (sqlquery.getGroupByList().size() > 0) {
             System.err.println("GroupBy is not implemented.");
             System.exit(1);
         }
-
+        
         if (sqlquery.getOrderByList().size() > 0) {
             System.err.println("Orderby is not implemented.");
             System.exit(1);
         }
-
+        
         tab_op_hash = new HashMap<>();
         createScanOp();
         createSelectOp();
@@ -70,8 +64,18 @@ public class RandomInitialPlan {
             createJoinOp();
         }
         createProjectOp();
+        if (sqlquery.isDistinct()) {
+            createDistinctOp();     //DISTINCT should be the root-most node, hence called last
+        }
 
         return root;
+    }
+
+    public void createDistinctOp() {
+        Distinct distinct = new Distinct(root, OpType.DISTINCT);
+        distinct.setSchema(root.getSchema());
+        root = distinct;
+        return;
     }
 
     /**
