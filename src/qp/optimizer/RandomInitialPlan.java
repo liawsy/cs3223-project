@@ -47,7 +47,7 @@ public class RandomInitialPlan {
      * prepare initial plan for the query
      **/
     public Operator prepareInitialPlan() {
-
+        
         if (sqlquery.isDistinct()) {
             System.err.println("Distinct is not implemented.");
             System.exit(1);
@@ -124,8 +124,11 @@ public class RandomInitialPlan {
         for (int j = 0; j < selectionlist.size(); ++j) {
             Condition cn = selectionlist.get(j);
             if (cn.getOpType() == Condition.SELECT) {
+                // get attribute's (LHS) table name
                 String tabname = cn.getLhs().getTabName();
+                // get operator to be performed on given table from hashtable
                 Operator tempop = (Operator) tab_op_hash.get(tabname);
+                // create new select operator
                 op1 = new Select(tempop, cn, OpType.SELECT);
                 /** set the schema same as base relation **/
                 op1.setSchema(tempop.getSchema());
@@ -192,6 +195,17 @@ public class RandomInitialPlan {
             root.setSchema(newSchema);
         }
     }
+
+    // public void createOrderByOp() {
+    //     Operator base = root;
+    //     if (projectlist == null)
+    //         projectlist = new ArrayList<Attribute>();
+    //     if (!projectlist.isEmpty()) {
+    //         root = new Project(base, projectlist, OpType.PROJECT);
+    //         Schema newSchema = base.getSchema().subSchema(projectlist);
+    //         root.setSchema(newSchema);
+    //     }
+    // }
 
     private void modifyHashtable(Operator old, Operator newop) {
         for (HashMap.Entry<String, Operator> entry : tab_op_hash.entrySet()) {
