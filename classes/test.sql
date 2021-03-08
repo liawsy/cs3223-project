@@ -1,0 +1,3 @@
+SELECT *
+from BILL 
+ORDERBY BILL.amount DESC
