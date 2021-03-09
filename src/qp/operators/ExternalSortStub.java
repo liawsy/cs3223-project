@@ -41,7 +41,7 @@ public class ExternalSortStub extends Operator {
      * @param base         is the base operator.
      * @param numOfBuffers is the number of buffers (in pages) available.
      */
-    public ExternalSortStub(Operator base, Vector attrList, int numOfBuffers) {
+    public ExternalSortStub(Operator base, ArrayList<Attribute> attrList, int numOfBuffers) {
         super(OpType.SORT);
         this.schema = base.schema;
 
@@ -50,7 +50,7 @@ public class ExternalSortStub extends Operator {
         this.batchSize = Batch.getPageSize() / schema.getTupleSize();
 
         for (int i = 0; i < attrList.size(); i++) {
-            Attribute attribute = (Attribute) attrList.elementAt(i);
+            Attribute attribute = (Attribute) attrList.get(i);
             sortKeyIndices.add(schema.indexOf(attribute));
         }
     }
@@ -213,7 +213,7 @@ public class ExternalSortStub extends Operator {
                 inEos[i] = true;
                 continue;
             }
-            Tuple current = inBatch.elementAt(0);
+            Tuple current = inBatch.get(0);
             outHeap.add(new TupleInRun(current, i, 0));
         }
 
@@ -249,7 +249,7 @@ public class ExternalSortStub extends Operator {
                 inEos[nextBatchID] = true;
                 continue;
             }
-            Tuple nextTuple = inBatch.elementAt(nextIndex);
+            Tuple nextTuple = inBatch.get(nextIndex);
             outHeap.add(new TupleInRun(nextTuple, nextBatchID, nextIndex));
         }
 

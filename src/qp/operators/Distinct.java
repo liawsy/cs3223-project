@@ -2,10 +2,10 @@ package qp.operators;
 
 import java.util.ArrayList;
 
-import jdk.javadoc.internal.doclets.formats.html.SourceToHTMLConverter;
 import qp.optimizer.BufferManager;
 import qp.utils.Attribute;
 import qp.utils.Batch;
+import qp.utils.Schema;
 import qp.utils.Tuple;
 
 /**
@@ -31,6 +31,10 @@ public class Distinct extends Operator {
 		this.base = base;
 	}
 	
+	public void setBase(Operator base) {
+		this.base = base;
+	}
+
 	public Operator getBase() {
 		return base;
 	}
@@ -57,8 +61,8 @@ public class Distinct extends Operator {
 		 * Base is sorted on ALL its attributes
 		 */
 		ArrayList<Attribute> sortattrs = base.getSchema().getAttList();
-		//ExternalSort extsort = new ExternalSort(base, sortattrs, BufferManager.numBuffer);
-		ExternalSortStub extsort = new ExternalSortStub(base, sortattrs, BufferManager.numBuffer);
+		//ExternalSort extsort = new ExternalSort(base, sortattrs, BufferManager.getNumBuffer());
+		ExternalSortStub extsort = new ExternalSortStub(base, sortattrs, BufferManager.getNumBuffer());
 		sortedbase = extsort;
 
 		//if the sorted based has error opening, cannot feed result pages to caller
@@ -82,7 +86,11 @@ public class Distinct extends Operator {
 		if (inputbuffer == null) {
 			//first time calling this function, 
 			//have to populate 
-			inputbuffer = base.next();
+			inputbuffer = sortedbase.next();
+			if (inputbuffer == null) {
+				eos = true;
+				return null;
+			}
 		}
 		
 		//read in tuple by tuple and remove duplicates
@@ -135,16 +143,20 @@ public class Distinct extends Operator {
 	
 	@Override
     public boolean close() {
-		base.close();
+		//base.close();
 		sortedbase.close();
         return true;
     }
 
 	@Override
     public Object clone() {
-        Distinct newD = new Distinct(base, this.optype);
+		//might deep clone EVERYTHING
+		Operator newbase = (Operator) this.base.clone();
+		//Schema newschema = (Schema) this.schema.clone();
+		Schema newschema = (Schema) newbase.getSchema();
+		
+        Distinct newD = new Distinct(newbase, this.optype);
+		newD.setSchema(newschema);
         return newD;
     }
-	
-	
 }
