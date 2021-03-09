@@ -14,6 +14,7 @@ public class BufferManager {
     public BufferManager(int numBuffer, int numJoin) {
         this.numBuffer = numBuffer;
         this.numJoin = numJoin;
+        //BUG: ?don't we do 1 join at a time? why have to split the joins between all buffers?
         buffPerJoin = numBuffer / numJoin;
     }
 
