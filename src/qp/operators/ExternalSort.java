@@ -173,7 +173,7 @@ public class ExternalSort extends Operator {
             }
 
             // looks through the rest of the batches
-            for (int i = minPtr; i < numRuns; i++) {
+            for (int i = minPtr + 1; i < numRuns; i++) {
                 Batch currBatch = inputBatches[i];
                 
                 // cannot get from buffers that are empty
@@ -183,7 +183,7 @@ public class ExternalSort extends Operator {
 
                 Tuple currTuple = currBatch.get(0);
                 
-                if (tupleComparator(minTuple, currTuple) < 0) {
+                if (tupleComparator(currTuple, minTuple) < 0) {
                     minTuple = currTuple;
                     minBatch = i;
                 }
@@ -265,7 +265,7 @@ public class ExternalSort extends Operator {
             // add to file
             System.out.println("\npass " + passId + " run " + sortedRunId);
             FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId, true);
-            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            ObjectOutputStream objectOut = new AppendableObjectOutputStream(fileOut);
             for (Tuple Tuple : sortedTuples) {
                 System.out.println("appending to file: ");
                 System.out.println(Tuple.toString());
@@ -304,4 +304,16 @@ public class ExternalSort extends Operator {
         super.close();
         return true;
     }
+
+    static class AppendableObjectOutputStream extends ObjectOutputStream {
+        public AppendableObjectOutputStream(FileOutputStream out) throws IOException {
+          super(out);
+        }
+      
+        @Override
+        protected void writeStreamHeader() throws IOException {
+          reset();
+        }
+    }
+   
 }
