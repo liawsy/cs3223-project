@@ -208,13 +208,19 @@ public class PlanCost {
         for (int i = 0; i < schema.getNumCols(); ++i) {
             Attribute attri = schema.getAttribute(i);
             long oldvalue = ht.get(attri);
-            //BUG: ?assume 100 distinct tuples, distributed uniformly across 1000 tuples in table
+            //BUG: ?
+            //claim: the expected #distinct will decrease ONLY for the attribute selected on
+            //for other cols, the expted #distinct will remain the same, with fewer occurances of each dist value
+            //E.g., for non-selection col:
+            //assume 100 distinct tuples, distributed uniformly across 1000 tuples in table
             //each distinct value has expected 10 occurances.
             //if we remove 0.3 of the tuples uniformly, we still expect
             //100 distinct tuples, but distributed across 700 tuples, for
             //7 occurances of each distinct value
+            //
+            //E.g., for selection col: we remove tuples in groups of their attribute column, so #dist should decrease
             long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
-            ht.put(attri, outtuples);
+            ht.put(attri, outtuples);   //BUG: newvalue isn't inserted into ht
         }
         return outtuples;
     }
