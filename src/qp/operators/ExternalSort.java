@@ -3,8 +3,10 @@
  */
 package qp.operators;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
@@ -94,16 +96,30 @@ public class ExternalSort extends Operator {
 
         while (numRunsToMerge > 1) {
             // k way merge
+            int outputRunId = 0;
             for (int start = 0; start < numRunsToMerge; start = start + numInputBuffer) {
                 int end = Math.min(start + numInputBuffer, numRunsToMerge) - 1;
-                mergeRunsBetween(start, end, passId, numInputBuffer);
+                mergeRunsBetween(start, end, passId, numInputBuffer, outputRunId);
+                outputRunId++;
             }
             numRunsToMerge = (int) Math.ceil(numRunsToMerge / (double) numInputBuffer);
             passId++;
+            clearFiles(passId);
         }
     }
 
-    public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer) {
+    public void clearFiles(int passId) {
+        File directory = new File("../operators");
+        for (File f : directory.listFiles()) {
+            // keeps the last sorted file and all java files
+            // if (!f.getName().startsWith("pass_" + passId) && !f.getName().endsWith(".java")) {
+            if (!f.getName().startsWith("pass_0") && !f.getName().endsWith(".class") && !f.getName().endsWith(".java")) {
+                f.delete();
+            }
+        }
+    }
+
+    public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer, int outputRunId) {
         // number of runs to merge
         int numRuns = end - start + 1;
         // tracks input streams of Tuple objects from file
@@ -118,7 +134,7 @@ public class ExternalSort extends Operator {
             int arrIndex = i % numRuns;
             // 1. set up ObjectInputStreams to read from file
             try {
-                FileInputStream fileIn = new FileInputStream("sorted_run_" + i + "_pass_" + passId);
+                FileInputStream fileIn = new FileInputStream("pass_" + passId + "_sorted_run_" + i);
                 ObjectInputStream inStream = new ObjectInputStream(fileIn);
                 inputStreams[arrIndex] = inStream;
                 inputEos[arrIndex] = false;
@@ -136,7 +152,6 @@ public class ExternalSort extends Operator {
         }
         
         Batch outputBatch = new Batch(tuplesPerBatch);
-        int outputRunId = 0;
         int outputPassId = passId + 1;
         // while there is still a stream that has not reached eos
         while (!reachedEndOfStreams(inputEos)) {
@@ -151,6 +166,7 @@ public class ExternalSort extends Operator {
                 if (!inputBatches[i].isEmpty()) {
                     minTuple = inputBatches[i].get(0); 
                     minPtr = i;
+                    minBatch = i; 
                     break;
                 }
             }
@@ -172,31 +188,43 @@ public class ExternalSort extends Operator {
                 }
             }
             
-            if (outputBatch.isFull()) {
-                // if buffer is full, write to file then clear the buffer
-                ArrayList<Tuple> tuplesToWrite = outputBatch.getTuples();
-                writeTuplesToFile(tuplesToWrite, outputRunId, outputPassId);
-                outputBatch.clear();
-                outputRunId++;
-            }
             // 4. add smallest to output buffer
             outputBatch.add(minTuple);
 
-            // 5. remove min tuple and read a new tuple into batch
+            if (outputBatch.isFull()) {
+                 // if buffer is full, write to file then clear the buffer
+                ArrayList<Tuple> TuplesToWrite = outputBatch.getTuples();
+                
+                File tempFile = new File("pass_" + outputPassId + "_sorted_run_" + outputRunId);
+                boolean exists = tempFile.exists();
+                if (exists) {
+                    writeTuplesToExistingFile(TuplesToWrite, outputRunId, outputPassId);
+                } else {
+                    writeTuplesToFile(TuplesToWrite, outputRunId, outputPassId);
+                }
+                outputBatch.clear();
+            }
+            
+
+            // 5. remove min Tuple and read a new Tuple into batch
             try {    
                 inputBatches[minBatch].remove(0);
                 ObjectInputStream stream = inputStreams[minBatch];
-                // check if stream can be read
-                if (stream.available() == 0) {
-                    // set eos to true if stream ends
-                    inputEos[minBatch] = true;
-                    stream.close();
-                    return;
-                }
-                inputBatches[minBatch].add((Tuple) stream.readObject());
+                Tuple newTuple = (Tuple) stream.readObject();
+                inputBatches[minBatch].add(newTuple);
                 
             } catch (Exception e) {
+                
+                try {
+                    inputStreams[minBatch].close();
+                    inputEos[minBatch] = true;
+                } catch (IOException io) {
+                    continue;
+                }
+                
                 e.printStackTrace();
+                // inputStreams[minBatch].close();
+                continue;
             }
         }
     }
@@ -231,10 +259,29 @@ public class ExternalSort extends Operator {
         return result;
     }
 
+    private static void writeTuplesToExistingFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
+        try {
+            // add to file
+            System.out.println("\npass " + passId + " run " + sortedRunId);
+            FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId, true);
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            for (Tuple Tuple : sortedTuples) {
+                System.out.println("appending to file: ");
+                System.out.println(Tuple.toString());
+                
+                objectOut.writeObject(Tuple);
+            }
+            objectOut.close();
+            fileOut.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
         try {
             // add to file
-            FileOutputStream fileOut = new FileOutputStream("sorted_run_" + sortedRunId + "_pass_" + passId);
+            FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
