@@ -9,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.Vector;
+import java.util.ArrayList;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
@@ -26,7 +27,7 @@ public class ExternalSortStub extends Operator {
     // The number of buffer pages available.
     private final int numOfBuffers;
     // The index of the attribute to sort based on.
-    private final Vector<Integer> sortKeyIndices = new Vector<>();
+    private final ArrayList<Integer> sortKeyIndices = new ArrayList<>();
     // The number of tuples per batch.
     private final int batchSize;
     // The input stream from which we read the sorted result.
