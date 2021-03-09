@@ -27,7 +27,7 @@ public class PlanCost {
      * * then this plan is not feasible and return
      * * a cost of infinity
      **/
-    boolean isFeasible;
+    boolean isFeasible; //is set to true when calculateCost() doesn't support the Operator subtype passed in
 
     /**
      * Hashtable stores mapping from Attribute name to
@@ -76,10 +76,22 @@ public class PlanCost {
             return getStatistics((Project) node);
         } else if (node.getOpType() == OpType.SCAN) {
             return getStatistics((Scan) node);
-        }
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            return getStatistics((Distinct) node);
+        }  
         System.out.println("operator is not supported");
         isFeasible = false;
         return 0;
+    }
+
+    /**
+     * Distinct might reduce the number of output tuples, 
+     * but does not modify the schema of the base table, hence 
+     * number of tuples per page should be unchanged.
+     * Incurs IO cost equal to doing 1 ExternalSort internally
+     */
+    protected long getStatistics(Distinct node) {
+        return Long.MAX_VALUE;
     }
 
     /**
@@ -179,10 +191,13 @@ public class PlanCost {
         long outtuples;
         /** Calculate the number of tuples in result **/
         if (exprtype == Condition.EQUAL) {
-            outtuples = (long) Math.ceil((double) intuples / (double) numdistinct);
+            //BUGS: ?this is an estimation. assumption is that numtuples are distributed uniformly across the number of distinct attributes
+            outtuples = (long) Math.ceil((double) intuples / (double) numdistinct); 
         } else if (exprtype == Condition.NOTEQUAL) {
             outtuples = (long) Math.ceil(intuples - ((double) intuples / (double) numdistinct));
         } else {
+            //BUGS: ?this is an estimation. assumption is that on average, the attr compared against will be the average value.
+            //every other tuple has 0.5 chance of being GEQ / LEQ the average value
             outtuples = (long) Math.ceil(0.5 * intuples);
         }
 
@@ -193,6 +208,11 @@ public class PlanCost {
         for (int i = 0; i < schema.getNumCols(); ++i) {
             Attribute attri = schema.getAttribute(i);
             long oldvalue = ht.get(attri);
+            //BUG: ?assume 100 distinct tuples, distributed uniformly across 1000 tuples in table
+            //each distinct value has expected 10 occurances.
+            //if we remove 0.3 of the tuples uniformly, we still expect
+            //100 distinct tuples, but distributed across 700 tuples, for
+            //7 occurances of each distinct value
             long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
             ht.put(attri, outtuples);
         }
