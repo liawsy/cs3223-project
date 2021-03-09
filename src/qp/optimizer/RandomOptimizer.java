@@ -390,6 +390,12 @@ public class RandomOptimizer {
             modifySchema(base);
             ArrayList attrlist = ((Project) node).getProjAttr();
             node.setSchema(base.getSchema().subSchema(attrlist));
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            Operator base = ((Distinct) node).getBase();
+            modifySchema(base);
+            node.setSchema(base.getSchema());
+        } else {
+            System.out.println("RandomOptimizer modifySchema() unknown node type");
         }
     }
 }

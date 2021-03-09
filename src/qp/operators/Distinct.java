@@ -111,7 +111,7 @@ public class Distinct extends Operator {
 				return outputbuffer;
 			} 
 			
-			if (inputbuffer.size() == 0) {	//gave a bug: input buffer is not null but size 0, then get tuple fails
+			if (inputbuffer.size() <= inputindex) {	//gave a bug: input buffer is not null but size 0, then get tuple fails
 				eos = true;
 				return outputbuffer;
 			}
