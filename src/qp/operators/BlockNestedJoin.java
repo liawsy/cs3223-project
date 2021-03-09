@@ -56,9 +56,6 @@ public class BlockNestedJoin extends Join {
         for (Condition con : conditionList) {
             Attribute leftattr = con.getLhs();
             Attribute rightattr = (Attribute) con.getRhs();
-            // gets the column for a given table
-            System.out.println("Here at 58");
-            System.out.println(left.getSchema());
             leftindex.add(left.getSchema().indexOf(leftattr));
             rightindex.add(right.getSchema().indexOf(rightattr));
         }
