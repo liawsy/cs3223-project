@@ -111,6 +111,10 @@ public class Distinct extends Operator {
 				return outputbuffer;
 			} 
 			
+			if (inputbuffer.size() == 0) {	//gave a bug: input buffer is not null but size 0, then get tuple fails
+				eos = true;
+				return outputbuffer;
+			}
 			//next tuple should exist now
 			Tuple nexttuple = inputbuffer.get(inputindex);
 			//nexttup belongs in output buffer if it's unique
