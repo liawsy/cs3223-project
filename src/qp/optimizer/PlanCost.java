@@ -107,7 +107,7 @@ public class PlanCost {
          */
         
          //calculating number of output tuples
-        long numouttuples = calculateCost(node.getBase());
+        long numouttuples = calculateCost(node.getBase());  //numouttuples of base and sortedbase should be the same
         long numpossibletuples = 1;//might overflow bc multiplying multiple longs tgt use for loop to exit before that
         for (int i = 0; i < node.getSchema().getAttList().size(); ++i) {
             Attribute attrholder = node.getSchema().getAttList().get(i);
@@ -116,6 +116,8 @@ public class PlanCost {
                 break;
             }
         }
+        if (numouttuples <= 0 || numpossibletuples <= 0) { System.out.println("Suspect long overflow"); System.exit(1);}
+        
         numouttuples = Math.min(numouttuples, numpossibletuples);
 
         //incrementing IO cost
