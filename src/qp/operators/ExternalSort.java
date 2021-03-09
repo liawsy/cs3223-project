@@ -72,8 +72,9 @@ public class ExternalSort extends Operator {
                 // adds all tuples from input batch to sorted run
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
-                if (base.next() != null) {
-                    inputBatch = base.next();
+                Batch nextBatch = base.next();
+                if (nextBatch != null) {
+                    inputBatch = nextBatch;
                 }
             }
             numSortedRun++;
