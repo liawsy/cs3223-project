@@ -31,6 +31,14 @@ public class Distinct extends Operator {
 		this.base = base;
 	}
 	
+	public Operator getBase() {
+		return base;
+	}
+	
+	public Operator getSortedBase() {
+		return sortedbase;
+	}
+
 	/**
 	 * what am i supposed to do in open()?
 	 * get Distinct ready for others to call next() on it??

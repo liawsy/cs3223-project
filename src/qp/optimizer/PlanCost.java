@@ -91,7 +91,45 @@ public class PlanCost {
      * Incurs IO cost equal to doing 1 ExternalSort internally
      */
     protected long getStatistics(Distinct node) {
-        return Long.MAX_VALUE;
+        /**
+         * num tuples output is MIN of
+         * - #tuples in input
+         * - #possible distinct tuples
+         * 
+         * #possible distinct tuples is product of all distinct values of all cols of the tuple's schema
+         * but #possible can overflow easily, return early if #possible >= #outputtuples
+         * 
+         * IO cost: need 
+         * - #pages of base, |N|
+         * - #buffers, B
+         * - log function, double Math.log(double)
+         * - ceil function, double Math.ceil(double)
+         */
+        
+         //calculating number of output tuples
+        long numouttuples = calculateCost(node.getBase());
+        long numpossibletuples = 1;//might overflow bc multiplying multiple longs tgt use for loop to exit before that
+        for (int i = 0; i < node.getSchema().getAttList().size(); ++i) {
+            Attribute attrholder = node.getSchema().getAttList().get(i);
+            numpossibletuples *= ht.get(attrholder);
+            if (numpossibletuples >= numouttuples) {
+                break;
+            }
+        }
+        numouttuples = Math.min(numouttuples, numpossibletuples);
+
+        //incrementing IO cost
+        int pagecapacity = Batch.getPageSize() / node.getSchema().getTupleSize();//implicit floor bc of integer division
+        int numpages = (int) Math.ceil((double)numouttuples / (double)pagecapacity);
+        //following the generate cost for sort merge
+        long numpasses = 1 + (long)Math.ceil(
+                                       Math.log(Math.ceil((double)numpages / (double)BufferManager.numBuffer)) / 
+                                       Math.log(BufferManager.numBuffer - 1));
+        long numIO = 2 * numpages * numpasses;
+        cost += numIO;
+
+        return numouttuples;
+        //i don't think distinct will change the number of distinct values in each attr, so no update to ht
     }
 
     /**
