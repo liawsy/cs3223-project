@@ -17,10 +17,10 @@ import qp.utils.Schema;
 import qp.utils.Tuple;
 
 public class ExternalSort extends Operator {
-    Operator base; // base table to sort
-    Schema schema; // base table schema
-    int tuplesPerBatch; // number of tuples per batch
-    int numBuffer; // number of buffer available
+    Operator base;      // base table to sort
+    Schema schema;      // base table schema
+    int tuplesPerBatch; // max number of tuples per batch
+    int numBuffer;      // total number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
     ObjectInputStream finalSortedStream;    // final sorted stream to read
 
@@ -37,10 +37,6 @@ public class ExternalSort extends Operator {
         }
     }
 
-    /**
-     * opens connection to the base operator
-     */
-    @Override
     public boolean open() {
         if (!base.open()) {
             return false;
@@ -60,7 +56,7 @@ public class ExternalSort extends Operator {
     public int createSortedRuns() {
 
         Batch inputBatch = base.next();
-        int numSortedRun = 0;
+        int numSortedRun = 0; // sorted run id starts at 0
 
         // while the table is not empty
         while (inputBatch != null) {
@@ -73,9 +69,9 @@ public class ExternalSort extends Operator {
                 // adds all tuples from input batch to sorted run
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
-                Batch nextBatch = base.next();
-                if (nextBatch != null) {
-                    inputBatch = nextBatch;
+                inputBatch = base.next();
+                if (inputBatch == null) {
+                    break;
                 }
             }
             numSortedRun++;
