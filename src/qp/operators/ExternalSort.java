@@ -336,7 +336,6 @@ public class ExternalSort extends Operator {
         } catch (Exception e) {
             e.printStackTrace();
         }
-            
         
         return super.close();
     }
