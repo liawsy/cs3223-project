@@ -109,12 +109,11 @@ public class ExternalSort extends Operator {
         }
     }
 
-    public void clearFiles(int passId) {
+    public void clearFiles(int finalPassId) {
         File directory = new File("../operators");
         for (File f : directory.listFiles()) {
             // keeps the last sorted file and all java files
-            // if (!f.getName().startsWith("pass_" + passId) && !f.getName().endsWith(".java")) {
-            if (!f.getName().startsWith("pass_0") && !f.getName().endsWith(".class") && !f.getName().endsWith(".java")) {
+            if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
                 f.delete();
             }
         }
@@ -133,6 +132,7 @@ public class ExternalSort extends Operator {
         // initial population of buffers(batches)
         for (int i = start; i <= end; i++) {
             int arrIndex = i % numRuns;
+            Batch inputBatch = new Batch(tuplesPerBatch);
             // 1. set up ObjectInputStreams to read from file
             try {
                 FileInputStream fileIn = new FileInputStream("pass_" + passId + "_sorted_run_" + i);
@@ -141,14 +141,15 @@ public class ExternalSort extends Operator {
                 inputEos[arrIndex] = false;
                 
                 // 2. put as many tuples as possible into batch
-                Batch inputBatch = new Batch(tuplesPerBatch);
                 while (!inputBatch.isFull()) {
                     inputBatch.add((Tuple) inStream.readObject());
                 }
                 inputBatches[arrIndex] = inputBatch;
             
             } catch (Exception e) {
-                e.printStackTrace();
+                // catch here if sorted run size < batch size 
+                inputBatches[arrIndex] = inputBatch;
+                continue;
             }
         }
         
@@ -192,13 +193,13 @@ public class ExternalSort extends Operator {
             // 4. add smallest to output buffer
             outputBatch.add(minTuple);
 
-            if (outputBatch.isFull()) {
-                 // if buffer is full, write to file then clear the buffer
+            // if buffer is full OR it is the last nonempty buffer, write to file then clear the buffer
+            if (outputBatch.isFull() || allOtherBatchesEmpty(inputBatches, minBatch)) {
+
                 ArrayList<Tuple> TuplesToWrite = outputBatch.getTuples();
                 
                 File tempFile = new File("pass_" + outputPassId + "_sorted_run_" + outputRunId);
-                boolean exists = tempFile.exists();
-                if (exists) {
+                if (tempFile.exists()) {
                     writeTuplesToExistingFile(TuplesToWrite, outputRunId, outputPassId);
                 } else {
                     writeTuplesToFile(TuplesToWrite, outputRunId, outputPassId);
@@ -215,19 +216,36 @@ public class ExternalSort extends Operator {
                 inputBatches[minBatch].add(newTuple);
                 
             } catch (Exception e) {
-                
                 try {
-                    inputStreams[minBatch].close();
-                    inputEos[minBatch] = true;
+                    // only close the stream if size is 0
+                    // otherwise continue
+                    if (inputBatches[minBatch].size() == 0) {
+                        inputStreams[minBatch].close();
+                        inputEos[minBatch] = true;
+                    }
                 } catch (IOException io) {
                     continue;
                 }
-                
-                e.printStackTrace();
-                // inputStreams[minBatch].close();
                 continue;
             }
         }
+    }
+
+    /**
+     * 
+     * @param inputBatches array of all batches
+     * @param currBatch current batch index
+     * @return true if all other batches are empty
+     */
+    private boolean allOtherBatchesEmpty(Batch[] inputBatches, int currBatch) {
+        boolean result = true;
+        for (int i = 0; i < inputBatches.length; i++) {
+            if (i == currBatch) {
+                continue;
+            }
+            result = result && inputBatches[i].isEmpty();
+        }
+        return result;
     }
 
     /**
@@ -263,13 +281,9 @@ public class ExternalSort extends Operator {
     private static void writeTuplesToExistingFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
         try {
             // add to file
-            System.out.println("\npass " + passId + " run " + sortedRunId);
             FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId, true);
             ObjectOutputStream objectOut = new AppendableObjectOutputStream(fileOut);
             for (Tuple Tuple : sortedTuples) {
-                System.out.println("appending to file: ");
-                System.out.println(Tuple.toString());
-                
                 objectOut.writeObject(Tuple);
             }
             objectOut.close();
