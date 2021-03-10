@@ -102,8 +102,8 @@ public class ExternalSort extends Operator {
             }
             numRunsToMerge = (int) Math.ceil(numRunsToMerge / (double) numInputBuffer);
             passId++;
-            clearFiles(passId);
         }
+        clearFiles(passId);
         try {
             FileInputStream finalSortedFile = new FileInputStream("pass_" + passId + "_sorted_run_0");
             finalSortedStream = new ObjectInputStream(finalSortedFile);
@@ -111,16 +111,6 @@ public class ExternalSort extends Operator {
             e.printStackTrace();
         }
         
-    }
-
-    public void clearFiles(int finalPassId) {
-        File directory = new File("../operators");
-        for (File f : directory.listFiles()) {
-            // keeps the last sorted file and all java files
-            if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
-                f.delete();
-            }
-        }
     }
 
     public void mergeRunsBetween(int start, int end, int passId, int numInputBuffer, int outputRunId) {
@@ -211,7 +201,6 @@ public class ExternalSort extends Operator {
                 outputBatch.clear();
             }
             
-
             // 5. remove min Tuple and read a new Tuple into batch
             try {    
                 inputBatches[minBatch].remove(0);
@@ -221,8 +210,8 @@ public class ExternalSort extends Operator {
                 
             } catch (Exception e) {
                 try {
-                    // only close the stream if size is 0
-                    // otherwise continue
+                    // close the stream if size is 0
+                    // otherwise have to continue
                     if (inputBatches[minBatch].size() == 0) {
                         inputStreams[minBatch].close();
                         inputEos[minBatch] = true;
@@ -239,7 +228,7 @@ public class ExternalSort extends Operator {
      * 
      * @param inputBatches array of all batches
      * @param currBatch current batch index
-     * @return true if all other batches are empty
+     * @return true if all batches other than currBatch are empty
      */
     private boolean allOtherBatchesEmpty(Batch[] inputBatches, int currBatch) {
         boolean result = true;
@@ -254,7 +243,7 @@ public class ExternalSort extends Operator {
 
     /**
      * 
-     * @param inputEos
+     * @param inputEos array that tracks whether end of streams are reached
      * @return true if has reached end of streams for all streams, false if there are streams that have not ended
      */
     private boolean reachedEndOfStreams(boolean[] inputEos) {
@@ -280,6 +269,20 @@ public class ExternalSort extends Operator {
             }
         }
         return result;
+    }
+
+    /**
+     * Deletes all files other than .java and the final sorted file
+     * @param finalPassId passId of the final sorted file
+     */
+    private void clearFiles(int finalPassId) {
+        File directory = new File("../operators");
+        for (File f : directory.listFiles()) {
+            // keeps the last sorted file and all java files
+            if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
+                f.delete();
+            }
+        }
     }
 
     private static void writeTuplesToExistingFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
