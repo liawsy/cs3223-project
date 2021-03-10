@@ -22,6 +22,7 @@ public class ExternalSort extends Operator {
     int tuplesPerBatch; // number of tuples per batch
     int numBuffer; // number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
+    ObjectInputStream finalSortedStream;    // final sorted stream to read
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
         super(OpType.SORT);
@@ -107,6 +108,13 @@ public class ExternalSort extends Operator {
             passId++;
             clearFiles(passId);
         }
+        try {
+            FileInputStream finalSortedFile = new FileInputStream("pass_" + passId + "_sorted_run_0");
+            finalSortedStream = new ObjectInputStream(finalSortedFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
     }
 
     public void clearFiles(int finalPassId) {
@@ -310,13 +318,27 @@ public class ExternalSort extends Operator {
 
     public Batch next() {
         // return next batch of sorted tuple
-        
-        return new Batch(tuplesPerBatch);
+        Batch outputBatch = new Batch(tuplesPerBatch);
+        while (!outputBatch.isFull()) {
+            try {
+                Tuple tuple = (Tuple) finalSortedStream.readObject();
+                outputBatch.add(tuple);
+            } catch (Exception e) {
+                break;
+            } 
+        }
+        return outputBatch;
     }
 
     public boolean close() {
-        super.close();
-        return true;
+        try {
+            finalSortedStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+            
+        
+        return super.close();
     }
 
     static class AppendableObjectOutputStream extends ObjectOutputStream {
