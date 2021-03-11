@@ -4,10 +4,12 @@
 
 package qp.operators;
 
-import qp.operators.OrderByType;
+import qp.operators.ExternalSort;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
+import qp.utils.OrderByComparator;
+import qp.utils.OrderByType;
 import qp.utils.Schema;
 import qp.utils.Tuple;
 
@@ -20,15 +22,24 @@ public class OrderBy extends Operator {
     int batchsize;                 // Number of tuples per outbatch
     ExternalSort sortOp;           // Sort operator for base operator
     int opType;                    // Operator Type
-    OrderByType orderType;            // OrderBy Type
+    List<OrderByType> orderTypes;  // List of Orderby Types
+    List<Attribute> attributeList;   // List of Attributes for Orderby
+    int numBuffer;                 // Number of buffers
+    OrderByComparator tupleComparator; // Comparator for External Sort
 
-    Batch inbatch;
-    Batch outbatch;
-
-    public OrderBy(Operator base, int opType, OrderByType type) {
+    public OrderBy(Operator base, int opType, List<OrderByType> orderTypes, List<Attribute> attributeList) {
         this.base = base;
         this.opType = opType;
-        this.orderType = type;
+        this.orderTypes = orderTypes;
+        this.attributeList = attributeList;
+    }
+
+    public OrderBy(Operator base, int opType, List<OrderByType> orderTypes, List<Attribute> attributeList, int numBuffer) {
+        this.base = base;
+        this.opType = opType;
+        this.orderTypes = orderTypes;
+        this.attributeList = attributeList;
+        this.numBuffer = numBuffer;
     }
 
     public Operator getBase() {
@@ -47,44 +58,42 @@ public class OrderBy extends Operator {
         this.numBuff = num;
     }
 
-    /**
-     * Opens the connection to the base operator
-     **/
     public boolean open() {
-        /**
-		 * Base is sorted on ALL its attributes depending on the orderby type.
-         * External sort should sort based on different comparator based on orderby type.
+		int tupleSize = schema.getTupleSize();
+		this.batchsize = Batch.getPageSize() / tupleSize;
+
+		if (!base.open()) return false;
+
+        tupleComparator = new OrderByComparator(attributeList, orderTypes);
+
+		/**
+		 * Create the underlying sort operator on the groupby list
 		 */
-		ArrayList<Attribute> attributeList = base.getSchema().getAttList();
-        sortOp = new ExternalSort(base, attributeList, numBuffer, orderType);
+        sortOp = new ExternalSort(base, attributeList, numBuffer, tupleComparator);
         return sortOp.open();
     }
 
-    /**
-     * Read next tuple from operator
-     */
+
+    @Override
     public Batch next() {
-        outbatch = new Batch(batchsize);
-        /** all the tuples in the inbuffer goes to the output buffer **/
-        inbatch = base.next();
+		return sortOp.next();
+    }
 
-        if (inbatch == null) {
-            return null;
-        }
+	@Override
+    public Object clone() {
+		//must deep clone EVERYTHING
+		Operator newbase = (Operator) this.base.clone();
+		//Schema newschema = (Schema) this.schema.clone();
+		Schema newschema = (Schema) newbase.getSchema();
 
-        for (int i = 0; i < inbatch.size(); i++) {
-            Tuple basetuple = inbatch.get(i);
-            //Debug.PPrint(basetuple);
-            //System.out.println();
-            ArrayList<Object> present = new ArrayList<>();
-            for (int j = 0; j < attrset.size(); j++) {
-                Object data = basetuple.dataAt(attrIndex[j]);
-                present.add(data);
-            }
-            Tuple outtuple = new Tuple(present);
-            outbatch.add(outtuple);
-        }
-        return outbatch;
+		ArrayList<Attribute> newOrderByList = new ArrayList<>();
+		for (Attribute a : this.attributeList) {
+			newOrderByList.add((Attribute) a.clone());
+		}
+
+        OrderBy newob = new OrderBy(newbase, newOrderByList, this.optype);
+		newob.setSchema(newschema);
+        return newob;
     }
 
     /**

@@ -22,6 +22,7 @@ public class RandomInitialPlan {
     ArrayList<Condition> selectionlist;   // List of select conditons
     ArrayList<Condition> joinlist;        // List of join conditions
     ArrayList<Attribute> groupbylist;
+    ArrayList<OrderByType> orderbylist;
     int numJoin;            // Number of joins in this query
     HashMap<String, Operator> tab_op_hash;  // Table name to the Operator
     Operator root;          // Root of the query plan tree

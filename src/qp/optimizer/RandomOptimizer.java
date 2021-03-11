@@ -66,6 +66,10 @@ public class RandomOptimizer {
             Operator base = makeExecPlan(((Project) node).getBase());
             ((Project) node).setBase(base);
             return node;
+        } else if (node.getOpType() == OpType.PROJECT) {
+            Operator base = makeExecPlan(((OrderBy) node).getBase());
+            ((OrderBy) node).setBase(base);
+            return node;
         } else {
             return node;
         }
@@ -362,6 +366,8 @@ public class RandomOptimizer {
             return findNodeAt(((Select) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.PROJECT) {
             return findNodeAt(((Project) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.OrderBy) {
+            return findNodeAt(((OrderBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -385,6 +391,11 @@ public class RandomOptimizer {
             Operator base = ((Project) node).getBase();
             modifySchema(base);
             ArrayList attrlist = ((Project) node).getProjAttr();
+            node.setSchema(base.getSchema().subSchema(attrlist));
+        } else if (node.getOpType() == OpType.OrderBy) {
+            Operator base = ((OrderBy) node).getBase();
+            modifySchema(base);
+            ArrayList attrlist = ((OrderBy) node).getProjAttr();
             node.setSchema(base.getSchema().subSchema(attrlist));
         }
     }
