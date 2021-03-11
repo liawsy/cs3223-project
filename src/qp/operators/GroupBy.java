@@ -12,7 +12,9 @@ import qp.utils.Tuple;
 /**
  * As per Prof Tan, groupby just makes the output tuples grouped together without removing duplicates.
  * A table sorted on the groupby attributes is necessarily grouped by those attributes. 
- * Hence groupby will just sort its base on the groupby attrlist
+ * Hence groupby will just sort its base on the groupby attrlist.
+ * 
+ * Internally uses an external sort
  */
 public class GroupBy extends Operator {
 	Operator base;					//underlying unsorted base

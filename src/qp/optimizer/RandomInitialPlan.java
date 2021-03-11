@@ -44,14 +44,11 @@ public class RandomInitialPlan {
     }
 
     /**
-     * prepare initial plan for the query
+     * prepare initial plan for the query.
+     * Order of creation of Ops results in the order of operators in the plan tree.
+     * Called later = higher up in tree
      **/
     public Operator prepareInitialPlan() {
-        if (sqlquery.getGroupByList().size() > 0) {
-            System.err.println("GroupBy is not implemented.");
-            System.exit(1);
-        }
-        
         if (sqlquery.getOrderByList().size() > 0) {
             System.err.println("Orderby is not implemented.");
             System.exit(1);
@@ -65,10 +62,19 @@ public class RandomInitialPlan {
         }
         createProjectOp();
         if (sqlquery.isDistinct()) {
-            createDistinctOp();     //DISTINCT should be the root-most node, hence called last
+            createDistinctOp();     
         }
-
+        if (sqlquery.isGroupBy()) {
+            createGroupByOp();
+        }
         return root;
+    }
+
+    public void createGroupByOp() {
+        GroupBy gb = new GroupBy(root, this.groupbylist, OpType.GROUPBY);
+        gb.setSchema(root.getSchema());
+        root = gb;
+        return;
     }
 
     public void createDistinctOp() {

@@ -78,11 +78,45 @@ public class PlanCost {
             return getStatistics((Scan) node);
         } else if (node.getOpType() == OpType.DISTINCT) {
             return getStatistics((Distinct) node);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            return getStatistics((GroupBy) node);
         }  
         System.out.println("operator is not supported");
         isFeasible = false;
         return 0;
     }
+
+    /**
+     * groupby doesn't change the number of output tuples, only reorders them.     * 
+     * groupby's IO cost is the cost to sort the underlying base
+     * @param node
+     * @return
+     */
+    protected long getStatistics(GroupBy node) {
+        /**
+         * IO cost: need 
+         * - #pages of base, |N|
+         * - #buffers, B
+         * - log function, double Math.log(double)
+         * - ceil function, double Math.ceil(double)
+         */
+        
+         //calculating number of output tuples
+         long numouttuples = calculateCost(node.getBase());
+ 
+         //incrementing IO cost
+         int pagecapacity = Batch.getPageSize() / node.getSchema().getTupleSize();//implicit floor bc of integer division
+         int numpages = (int) Math.ceil((double)numouttuples / (double)pagecapacity);
+         //following the generate cost for sort merge
+         long numpasses = 1 + (long)Math.ceil(
+                                        Math.log(Math.ceil((double)numpages / (double)BufferManager.numBuffer)) / 
+                                        Math.log(BufferManager.numBuffer - 1));
+         long numIO = 2 * numpages * numpasses;
+         cost += numIO;
+ 
+         return numouttuples;
+         //won't change the number of distinct values in each attr, so no update to ht
+     }
 
     /**
      * Distinct might reduce the number of output tuples, 
