@@ -9,13 +9,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
 import java.util.ArrayList;
-import java.util.Comparator;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
-import qp.utils.OrderByComparator;
 import qp.utils.Schema;
 import qp.utils.Tuple;
 
@@ -26,7 +23,7 @@ public class ExternalSort extends Operator {
     int numBuffer;      // total number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
     ObjectInputStream finalSortedStream;    // final sorted stream to read
-    Comparator<Tuple> tupleComparator;
+    boolean isDesc; // sort by descending order
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
         super(OpType.SORT);
@@ -34,33 +31,26 @@ public class ExternalSort extends Operator {
         this.base = base;
         this.schema = base.schema;
         this.numBuffer = numBuffer;
+        this.isDesc = false;
+
         for (int i = 0; i < attributeList.size(); i++) {
             Attribute attribute = attributeList.get(i);
             attributeIndices.add(schema.indexOf(attribute));
         }
-        this.tupleComparator = new Comparator<Tuple>() {
-            @Override
-            public int compare(Tuple t1, Tuple t2) {
-                int result = 0;
-                for (int i = 0; i < attributeIndices.size(); i++) {
-                    result = Tuple.compareTuples(t1, t2, attributeIndices.get(i));
-                    if (result != 0) {
-                        return result;
-                    }
-                }
-                return result;
-            }
-        };
     }
 
-    
-    public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer, Comparator<Tuple> tupleComparator) {
+    public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer, boolean isDesc) {
         super(OpType.SORT);
 
         this.base = base;
         this.schema = base.schema;
         this.numBuffer = numBuffer;
-        this.tupleComparator = tupleComparator;
+        this.isDesc = isDesc;
+
+        for (int i = 0; i < attributeList.size(); i++) {
+            Attribute attribute = attributeList.get(i);
+            attributeIndices.add(schema.indexOf(attribute));
+        }
     }
 
     public boolean open() {
@@ -81,15 +71,11 @@ public class ExternalSort extends Operator {
 
     public int createSortedRuns() {
 
-        System.out.println("Creating sorted runs");
-
         Batch inputBatch = base.next();
         int numSortedRun = 0; // sorted run id starts at 0
 
         // while the table is not empty
         while (inputBatch != null) {
-
-            System.out.println("At line 92");
 
             ArrayList<Tuple> tuplesInSortedRun = new ArrayList<Tuple>();
 
@@ -100,26 +86,19 @@ public class ExternalSort extends Operator {
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
                 inputBatch = base.next();
-                
                 if (inputBatch == null) {
                     break;
                 }
             }
             
+
             // sort tuples
-            tuplesInSortedRun.sort(this.tupleComparator);
-
-
-            // // sort tuples
-            // tuplesInSortedRun.sort(this::tupleComparator);
+            tuplesInSortedRun.sort(this::tupleComparator);
             
             // generating of sorted runs => considered as pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
             numSortedRun++;
 
-            numSortedRun++;
-
-            System.out.println("It's stuck here!");
             inputBatch = base.next();
         }
         return numSortedRun;
@@ -216,8 +195,7 @@ public class ExternalSort extends Operator {
 
                 Tuple currTuple = currBatch.get(0);
                 
-                if (tupleComparator.compare(currTuple, minTuple) < 0) {
-                    System.out.println("here");
+                if (tupleComparator(currTuple, minTuple) < 0) {
                     minTuple = currTuple;
                     minBatch = i;
                 }
@@ -299,12 +277,16 @@ public class ExternalSort extends Operator {
      * @param t2 is the second tuple
      * @return -1 if t1 comes before t2, 0 if they are equal, 1 if t2 comes before t1
      */
-    private int defaultComparator(Tuple t1, Tuple t2) {
+    private int tupleComparator(Tuple t1, Tuple t2) {
         int result = 0;
         for (int i = 0; i < attributeIndices.size(); i++) {
             result = Tuple.compareTuples(t1, t2, attributeIndices.get(i));
             if (result != 0) {
-                return result;
+                if (isDesc) {
+                    return result * -1;
+                } else {
+                    return result;
+                }
             }
         }
         return result;
@@ -347,7 +329,6 @@ public class ExternalSort extends Operator {
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
             }
-            System.out.println("TEST");
             objectOut.close();
             fileOut.close();
         } catch (Exception e) {

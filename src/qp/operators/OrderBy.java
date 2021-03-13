@@ -5,13 +5,12 @@
 package qp.operators;
 
 import qp.operators.ExternalSort;
+import qp.operators.OrderByType;
 
 import qp.optimizer.BufferManager;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
-import qp.utils.OrderByComparator;
-import qp.utils.OrderByType;
 import qp.utils.Schema;
 import qp.utils.Tuple;
 
@@ -19,19 +18,18 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-// should we extend sort instead?
 public class OrderBy extends Operator {
 
     Operator base;                 // Base table to project
-    int batchsize;                 // Number of tuples per outbatch
     ExternalSort sortOp;           // Sort operator for base operator
-    int opType;                    // Operator Type
-    // List<OrderByType> orderTypes;  // List of Orderby Types
-    int order;              // order in which tuples should appear
+
     ArrayList<Attribute> attributeList;   // List of Attributes for Orderby
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // List of Attribute Indices
+
+    int opType;                    // Operator Type
+    int order;                     // Order in which tuples should appear
     int numBuffer;                 // Number of buffers
-    OrderByComparator tupleComparator; // Comparator for External Sort
+    int batchSize;                 // Number of tuples per outbatch
 
     public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList) {
         super(opType);
@@ -39,15 +37,6 @@ public class OrderBy extends Operator {
         this.opType = opType;
         this.order = order;
         this.attributeList = attributeList;
-    }
-
-    public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList, int numBuffer) {
-        super(opType);
-        this.base = base;
-        this.opType = opType;
-        this.order = order;
-        this.attributeList = attributeList;
-        this.numBuffer = numBuffer;
     }
 
     public Operator getBase() {
@@ -67,7 +56,6 @@ public class OrderBy extends Operator {
     }
 
     private void updateAttributeIndices() {
-
         for (int i = 0; i < attributeList.size(); i++) {
             Attribute attribute = attributeList.get(i);
             attributeIndices.add(this.schema.indexOf(attribute));
@@ -77,18 +65,21 @@ public class OrderBy extends Operator {
     @Override
     public boolean open() {
 		int tupleSize = this.schema.getTupleSize();
-		this.batchsize = Batch.getPageSize() / tupleSize;
+		this.batchSize = Batch.getPageSize() / tupleSize;
 
 		if (!base.open()) return false;
 
         updateAttributeIndices();
 
-        tupleComparator = new OrderByComparator(attributeIndices, order);
-
 		/**
-		 * Create the underlying sort operator on the groupby list
+		 * Create the underlying sort operator on the orderby list
 		 */
-        sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), tupleComparator);
+        if (order == OrderByType.ASC) {
+            sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), false);
+        } else {
+            sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), true);
+        }
+        
         return sortOp.open();
     }
 
@@ -101,17 +92,17 @@ public class OrderBy extends Operator {
 	@Override
     public Object clone() {
 		//must deep clone EVERYTHING
-		Operator newbase = (Operator) this.base.clone();
-		Schema newschema = (Schema) newbase.getSchema();
+		Operator newBase = (Operator) this.base.clone();
+		Schema newSchema = (Schema) newBase.getSchema();
 
 		ArrayList<Attribute> newOrderByList = new ArrayList<>();
 		for (Attribute a : this.attributeList) {
 			newOrderByList.add((Attribute) a.clone());
 		}
 
-        OrderBy newob = new OrderBy(newbase, this.opType, order, newOrderByList);
-		newob.setSchema(newschema);
-        return newob;
+        OrderBy newOb = new OrderBy(newBase, this.opType, order, newOrderByList);
+		newOb.setSchema(newSchema);
+        return newOb;
     }
 
     /**

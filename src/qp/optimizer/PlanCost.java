@@ -76,12 +76,12 @@ public class PlanCost {
             return getStatistics((Project) node);
         } else if (node.getOpType() == OpType.SCAN) {
             return getStatistics((Scan) node);
-        } else if (node.getOpType() == OpType.ORDERBY) {
-            return getStatistics((OrderBy) node);
         } else if (node.getOpType() == OpType.DISTINCT) {
             return getStatistics((Distinct) node);
         } else if (node.getOpType() == OpType.GROUPBY) {
             return getStatistics((GroupBy) node);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return getStatistics((OrderBy) node);
         }  
         System.out.println("operator is not supported");
         isFeasible = false;
