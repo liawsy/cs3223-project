@@ -64,6 +64,7 @@ finalquery ::= sqlquery:s
         |  sqlquery:s ORDERBY attlist:a
         {:
             s.setOrderByList(a);
+			s.setIsDesc(false);
             parser.query = s;
             RESULT = s;
         :}
@@ -71,13 +72,14 @@ finalquery ::= sqlquery:s
         {:
             s.setGroupByList(a);
             s.setOrderByList(b);
+			s.setIsDesc(false);
             parser.query = s;
             RESULT = s;
 		:}
 		|  sqlquery:s ORDERBY attlist:a ASC
         {:
             s.setOrderByList(a);
-			s.setIsAsc(true);
+			s.setIsDesc(false);
             parser.query = s;
             RESULT = s;
         :}
@@ -85,7 +87,7 @@ finalquery ::= sqlquery:s
         {:
             s.setGroupByList(a);
             s.setOrderByList(b);
-			s.setIsAsc(true);
+			s.setIsDesc(false);
             parser.query = s;
             RESULT = s;
         :}

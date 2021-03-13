@@ -9,7 +9,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+
 import java.util.ArrayList;
+import java.util.Comparator;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
@@ -101,7 +103,7 @@ public class ExternalSort extends Operator {
             numSortedRun++;
 
             // sort tuples
-            tuplesInSortedRun.sort(this::tupleComparator);
+            tuplesInSortedRun.sort(this.tupleComparator);
 
             // generating of sorted runs => considered as pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);

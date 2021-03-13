@@ -6,6 +6,8 @@ package qp.operators;
 
 import qp.operators.ExternalSort;
 
+import qp.optimizer.BufferManager;
+
 import qp.utils.Attribute;
 import qp.utils.Batch;
 import qp.utils.OrderByComparator;
@@ -14,6 +16,8 @@ import qp.utils.Schema;
 import qp.utils.Tuple;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 // should we extend sort instead?
 public class OrderBy extends Operator {
@@ -22,24 +26,39 @@ public class OrderBy extends Operator {
     int batchsize;                 // Number of tuples per outbatch
     ExternalSort sortOp;           // Sort operator for base operator
     int opType;                    // Operator Type
-    List<OrderByType> orderTypes;  // List of Orderby Types
-    List<Attribute> attributeList;   // List of Attributes for Orderby
+    // List<OrderByType> orderTypes;  // List of Orderby Types
+    int order;              // order in which tuples should appear
+    ArrayList<Attribute> attributeList;   // List of Attributes for Orderby
+    ArrayList<Integer> attributeIndices; // List of Attribute Indices
     int numBuffer;                 // Number of buffers
     OrderByComparator tupleComparator; // Comparator for External Sort
+    Schema schema;
 
-    public OrderBy(Operator base, int opType, List<OrderByType> orderTypes, List<Attribute> attributeList) {
+    public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList) {
+        super(opType);
         this.base = base;
+        // this.schema = base.getSchema();
         this.opType = opType;
-        this.orderTypes = orderTypes;
+        this.order = order;
         this.attributeList = attributeList;
+        // for (int i = 0; i < attributeList.size(); i++) {
+        //     Attribute attribute = attributeList.get(i);
+        //     attributeIndices.add(schema.indexOf(attribute));
+        // }
     }
 
-    public OrderBy(Operator base, int opType, List<OrderByType> orderTypes, List<Attribute> attributeList, int numBuffer) {
+    public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList, int numBuffer) {
+        super(opType);
         this.base = base;
+        // this.schema = base.getSchema();
         this.opType = opType;
-        this.orderTypes = orderTypes;
+        this.order = order;
         this.attributeList = attributeList;
         this.numBuffer = numBuffer;
+        // for (int i = 0; i < attributeList.size(); i++) {
+        //     Attribute attribute = attributeList.get(i);
+        //     attributeIndices.add(schema.indexOf(attribute));
+        // }
     }
 
     public Operator getBase() {
@@ -51,11 +70,18 @@ public class OrderBy extends Operator {
     }
 
     public int getNumBuff() {
-        return numBuff;
+        return this.numBuffer;
     }
 
     public void setNumBuff(int num) {
-        this.numBuff = num;
+        this.numBuffer = num;
+    }
+
+    private void updateAttributeIndices() {
+        for (int i = 0; i < attributeList.size(); i++) {
+            Attribute attribute = attributeList.get(i);
+            attributeIndices.add(schema.indexOf(attribute));
+        }
     }
 
     public boolean open() {
@@ -64,12 +90,14 @@ public class OrderBy extends Operator {
 
 		if (!base.open()) return false;
 
-        tupleComparator = new OrderByComparator(attributeList, orderTypes);
+        updateAttributeIndices();
+
+        tupleComparator = new OrderByComparator(attributeIndices, order);
 
 		/**
 		 * Create the underlying sort operator on the groupby list
 		 */
-        sortOp = new ExternalSort(base, attributeList, numBuffer, tupleComparator);
+        sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), tupleComparator);
         return sortOp.open();
     }
 
@@ -91,7 +119,7 @@ public class OrderBy extends Operator {
 			newOrderByList.add((Attribute) a.clone());
 		}
 
-        OrderBy newob = new OrderBy(newbase, newOrderByList, this.optype);
+        OrderBy newob = new OrderBy(newbase, this.opType, order, newOrderByList);
 		newob.setSchema(newschema);
         return newob;
     }
@@ -100,7 +128,6 @@ public class OrderBy extends Operator {
      * Close the operator
      */
     public boolean close() {
-        inbatch = null;
         base.close();
         sortOp.close();
         return true;

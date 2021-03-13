@@ -1,22 +1,32 @@
-
 package qp.utils;
 
 import qp.utils.Attribute;
 import qp.utils.OrderByType;
+import qp.utils.Schema;
 import qp.utils.Tuple;
+
+import java.util.Comparator;
+import java.util.List;
 
 public class OrderByComparator implements Comparator<Tuple> {
     
-    List<Attribute> attributeIndices;
-    List<OrderByType> orderByList;
+    List<Integer> attributeIndices;
+    // List<OrderByType> orderByList;
+    int order;
+    Schema schema;
 
 
-    public OrderByComparator(List<Attrbute> attributeList, List<OrderBy> orderByList) {
-        this.orderByList = orderByList;
-        for (int i = 0; i < attributeList.size(); i++) {
-            Attribute attribute = attributeList.get(i);
-            attributeIndices.add(schema.indexOf(attribute));
-        }
+    // public OrderByComparator(List<Attrbute> attributeList, List<OrderBy> orderByList) {
+    //     this.orderByList = orderByList;
+    //     for (int i = 0; i < attributeList.size(); i++) {
+    //         Attribute attribute = attributeList.get(i);
+    //         attributeIndices.add(schema.indexOf(attribute));
+    //     }
+    // }
+
+    public OrderByComparator(List<Integer> attributeIndices, int order) {
+        this.order = order;
+        this.attributeIndices = attributeIndices;
     }
 
     /**
@@ -26,12 +36,12 @@ public class OrderByComparator implements Comparator<Tuple> {
      * @return -1 if t1 comes before t2, 0 if they are equal, 1 if t2 comes before t1
      */
     @Override
-    public int compare(Tuple tuple1, Tuple tuple2) {
+    public int compare(Tuple t1, Tuple t2) {
         int result = 0;
         for (int i = 0; i < attributeIndices.size(); i++) {
             result = Tuple.compareTuples(t1, t2, attributeIndices.get(i));
             if (result != 0) {
-               if (orderByList.get(i).orderType == OrderType.ASC) {
+               if (order == OrderByType.ASC) {
                    return result;
                } else {
                    return result * -1;

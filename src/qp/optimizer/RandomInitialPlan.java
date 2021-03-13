@@ -22,7 +22,7 @@ public class RandomInitialPlan {
     ArrayList<Condition> selectionlist;   // List of select conditons
     ArrayList<Condition> joinlist;        // List of join conditions
     ArrayList<Attribute> groupbylist;
-    ArrayList<OrderByType> orderbylist;
+    ArrayList<Attribute> orderbylist;
     int numJoin;            // Number of joins in this query
     HashMap<String, Operator> tab_op_hash;  // Table name to the Operator
     Operator root;          // Root of the query plan tree
@@ -34,6 +34,7 @@ public class RandomInitialPlan {
         selectionlist = sqlquery.getSelectionList();
         joinlist = sqlquery.getJoinList();
         groupbylist = sqlquery.getGroupByList();
+        orderbylist = sqlquery.getOrderByList();
         numJoin = joinlist.size();
     }
 
@@ -60,8 +61,7 @@ public class RandomInitialPlan {
         }
 
         if (sqlquery.getOrderByList().size() > 0) {
-            System.err.println("Orderby is not implemented.");
-            System.exit(1);
+            createOrderByOp(sqlquery.isDesc());
         }
 
         tab_op_hash = new HashMap<>();
@@ -191,6 +191,22 @@ public class RandomInitialPlan {
             root = new Project(base, projectlist, OpType.PROJECT);
             Schema newSchema = base.getSchema().subSchema(projectlist);
             root.setSchema(newSchema);
+        }
+    }
+
+    public void createOrderByOp(boolean isDesc) {
+        if (orderbylist == null)
+            // orderbylist = new ArrayList<Attribute>();
+            System.out.println("ORDERBY LIST NULL YO");
+        if (!orderbylist.isEmpty()) {
+            OrderBy orderby;
+            if (isDesc) {
+                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.DESC, orderbylist);
+            } else {
+                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.ASC, orderbylist);
+            }
+            orderby.setSchema(root.getSchema());
+            root = orderby;
         }
     }
 

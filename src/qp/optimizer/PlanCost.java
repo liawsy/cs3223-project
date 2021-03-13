@@ -152,6 +152,38 @@ public class PlanCost {
         return outtuples;
     }
 
+     /**
+      * 
+     **/
+    protected long getStatistics(OrderBy node) {
+        // Get cost of sort
+        long numouttuples = calculateCost(node.getBase());  //numouttuples of base and sortedbase should be the same
+        long numpossibletuples = 1;//might overflow bc multiplying multiple longs tgt use for loop to exit before that
+        for (int i = 0; i < node.getSchema().getAttList().size(); ++i) {
+            Attribute attrholder = node.getSchema().getAttList().get(i);
+            numpossibletuples *= ht.get(attrholder);
+            if (numpossibletuples >= numouttuples) {
+                break;
+            }
+        }
+        if (numouttuples <= 0 || numpossibletuples <= 0) { System.out.println("Suspect long overflow"); System.exit(1);}
+
+        numouttuples = Math.min(numouttuples, numpossibletuples);
+
+        //incrementing IO cost
+        int pagecapacity = Batch.getPageSize() / node.getSchema().getTupleSize();//implicit floor bc of integer division
+        int numpages = (int) Math.ceil((double)numouttuples / (double)pagecapacity);
+        //following the generate cost for sort merge
+        long numpasses = 1 + (long)Math.ceil(
+                                       Math.log(Math.ceil((double)numpages / (double)BufferManager.numBuffer)) / 
+                                       Math.log(BufferManager.numBuffer - 1));
+        long numIO = 2 * numpages * numpasses;
+        cost += numIO;
+
+        return numouttuples;
+    }
+    
+
     /**
      * Find number of incoming tuples, Using the selectivity find # of output tuples
      * * And statistics about the attributes
