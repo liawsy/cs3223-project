@@ -310,13 +310,11 @@ public class ExternalSort extends Operator {
      * @param finalPassId passId of the final sorted file
      */
     private void clearFiles(int finalPassId) {
-        File directory = new File("../operators");
-        if (directory.listFiles() != null) {
-            for (File f : directory.listFiles()) {
-                // keeps the last sorted file and all java files
-                if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
-                    f.delete();
-                }
+        File directory = new File("../classes");
+        for (File f : directory.listFiles()) {
+            // keeps the last sorted file and all java files
+            if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
+                f.delete();
             }
         }
     }
