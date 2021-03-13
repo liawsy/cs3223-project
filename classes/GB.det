@@ -1,0 +1,6 @@
+4
+50
+name STRING 8 PK 10
+colone INTEGER 3 NK 4
+coltwo INTEGER 3 NK 4
+colthree INTEGER 3 NK 4

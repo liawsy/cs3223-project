@@ -279,6 +279,18 @@ public class PlanCost {
          ** Assuming the values are distributed uniformly along entire
          ** relation
          **/
+        /*
+        //proposed fix, replace next for loop which this code chunk
+        Condition cn = node.getCondition();
+        assert(cn.getOpType() == Condition.SELECT);
+        //comparing LHS attribute to RHS string value
+        //LHS is the select attribute affected
+        Attribute attri = cn.getLhs();
+        long oldvalue = ht.get(attri);
+        long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
+        ht.put(attri, newvalue);   //BUG: newvalue isn't inserted into ht
+        */
+
         for (int i = 0; i < schema.getNumCols(); ++i) {
             Attribute attri = schema.getAttribute(i);
             long oldvalue = ht.get(attri);
