@@ -75,6 +75,7 @@ public class ExternalSort extends Operator {
                 }
             }
             
+
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
             
