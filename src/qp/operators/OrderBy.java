@@ -36,28 +36,18 @@ public class OrderBy extends Operator {
     public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList) {
         super(opType);
         this.base = base;
-        // this.schema = base.getSchema();
         this.opType = opType;
         this.order = order;
         this.attributeList = attributeList;
-        // for (int i = 0; i < attributeList.size(); i++) {
-        //     Attribute attribute = attributeList.get(i);
-        //     attributeIndices.add(schema.indexOf(attribute));
-        // }
     }
 
     public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList, int numBuffer) {
         super(opType);
         this.base = base;
-        // this.schema = base.getSchema();
         this.opType = opType;
         this.order = order;
         this.attributeList = attributeList;
         this.numBuffer = numBuffer;
-        // for (int i = 0; i < attributeList.size(); i++) {
-        //     Attribute attribute = attributeList.get(i);
-        //     attributeIndices.add(schema.indexOf(attribute));
-        // }
     }
 
     public Operator getBase() {

@@ -10,6 +10,7 @@ import qp.utils.Condition;
 import qp.utils.RandNumb;
 import qp.utils.SQLQuery;
 
+import java.security.acl.Group;
 import java.util.ArrayList;
 
 public class RandomOptimizer {
@@ -69,6 +70,13 @@ public class RandomOptimizer {
         } else if (node.getOpType() == OpType.ORDERBY) {
             Operator base = makeExecPlan(((OrderBy) node).getBase());
             ((OrderBy) node).setBase(base);
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            Operator base = makeExecPlan(((Distinct) node).getBase());
+            ((Distinct) node).setBase(base);
+            return node;
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            Operator base = makeExecPlan(((GroupBy) node).getBase());
+            ((GroupBy) node).setBase(base);
             return node;
         } else {
             return node;
@@ -368,6 +376,10 @@ public class RandomOptimizer {
             return findNodeAt(((Project) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.ORDERBY) {
             return findNodeAt(((OrderBy) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            return findNodeAt(((Distinct) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            return findNodeAt(((GroupBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -397,6 +409,16 @@ public class RandomOptimizer {
             modifySchema(base);
             node.setSchema(base.getSchema());
             System.out.println(base.getSchema());
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            Operator base = ((Distinct) node).getBase();
+            modifySchema(base);
+            node.setSchema(base.getSchema());
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            Operator base = ((GroupBy) node).getBase();
+            modifySchema(base);
+            node.setSchema(base.getSchema());
+        } else {
+            System.out.println("RandomOptimizer modifySchema() unknown node type: " + node.getOpType());
         }
     }
 }
