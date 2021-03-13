@@ -43,8 +43,8 @@ public class GroupBy extends Operator {
 		/**
 		 * Create the underlying sort operator on the groupby list
 		 */
-		//ExternalSort extsort = new ExternalSort(base, groupbylist, BufferManager.getNumBuffer());
-		ExternalSortStub extsort = new ExternalSortStub(base, groupbylist, BufferManager.getNumBuffer());
+		ExternalSort extsort = new ExternalSort(base, groupbylist, BufferManager.getNumBuffer());
+		//ExternalSortStub extsort = new ExternalSortStub(base, groupbylist, BufferManager.getNumBuffer());
 		groupedbase = extsort;
 
 		//if the sorted based has error opening, cannot feed result pages to caller
