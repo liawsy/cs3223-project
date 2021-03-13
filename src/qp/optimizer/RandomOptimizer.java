@@ -396,6 +396,7 @@ public class RandomOptimizer {
             Operator base = ((OrderBy) node).getBase();
             modifySchema(base);
             node.setSchema(base.getSchema());
+            System.out.println(base.getSchema());
         }
     }
 }

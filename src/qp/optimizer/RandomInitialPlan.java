@@ -60,10 +60,6 @@ public class RandomInitialPlan {
             System.exit(1);
         }
 
-        if (sqlquery.getOrderByList().size() > 0) {
-            createOrderByOp(sqlquery.isDesc());
-        }
-
         tab_op_hash = new HashMap<>();
         createScanOp();
         createSelectOp();
@@ -71,6 +67,10 @@ public class RandomInitialPlan {
             createJoinOp();
         }
         createProjectOp();
+        if (sqlquery.getOrderByList().size() > 0) {
+            createOrderByOp(sqlquery.isDesc());
+        }
+
 
         return root;
     }
@@ -195,15 +195,12 @@ public class RandomInitialPlan {
     }
 
     public void createOrderByOp(boolean isDesc) {
-        if (orderbylist == null)
-            // orderbylist = new ArrayList<Attribute>();
-            System.out.println("ORDERBY LIST NULL YO");
-        if (!orderbylist.isEmpty()) {
+        if (!this.orderbylist.isEmpty()) {
             OrderBy orderby;
             if (isDesc) {
-                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.DESC, orderbylist);
+                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.DESC, this.orderbylist);
             } else {
-                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.ASC, orderbylist);
+                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.ASC, this.orderbylist);
             }
             orderby.setSchema(root.getSchema());
             root = orderby;

@@ -81,11 +81,15 @@ public class ExternalSort extends Operator {
 
     public int createSortedRuns() {
 
+        System.out.println("Creating sorted runs");
+
         Batch inputBatch = base.next();
         int numSortedRun = 0; // sorted run id starts at 0
 
         // while the table is not empty
         while (inputBatch != null) {
+
+            System.out.println("At line 92");
 
             ArrayList<Tuple> tuplesInSortedRun = new ArrayList<Tuple>();
 
@@ -96,18 +100,21 @@ public class ExternalSort extends Operator {
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
                 inputBatch = base.next();
+                
                 if (inputBatch == null) {
                     break;
                 }
             }
-            numSortedRun++;
-
+            
             // sort tuples
             tuplesInSortedRun.sort(this.tupleComparator);
 
             // generating of sorted runs => considered as pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
 
+            numSortedRun++;
+
+            System.out.println("It's stuck here!");
             inputBatch = base.next();
         }
         return numSortedRun;
@@ -205,6 +212,7 @@ public class ExternalSort extends Operator {
                 Tuple currTuple = currBatch.get(0);
                 
                 if (tupleComparator.compare(currTuple, minTuple) < 0) {
+                    System.out.println("here");
                     minTuple = currTuple;
                     minBatch = i;
                 }
@@ -303,10 +311,12 @@ public class ExternalSort extends Operator {
      */
     private void clearFiles(int finalPassId) {
         File directory = new File("../operators");
-        for (File f : directory.listFiles()) {
-            // keeps the last sorted file and all java files
-            if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
-                f.delete();
+        if (directory.listFiles() != null) {
+            for (File f : directory.listFiles()) {
+                // keeps the last sorted file and all java files
+                if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
+                    f.delete();
+                }
             }
         }
     }
@@ -334,6 +344,7 @@ public class ExternalSort extends Operator {
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
             }
+            System.out.println("TEST");
             objectOut.close();
             fileOut.close();
         } catch (Exception e) {

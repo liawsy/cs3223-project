@@ -29,10 +29,9 @@ public class OrderBy extends Operator {
     // List<OrderByType> orderTypes;  // List of Orderby Types
     int order;              // order in which tuples should appear
     ArrayList<Attribute> attributeList;   // List of Attributes for Orderby
-    ArrayList<Integer> attributeIndices; // List of Attribute Indices
+    ArrayList<Integer> attributeIndices = new ArrayList<>(); // List of Attribute Indices
     int numBuffer;                 // Number of buffers
     OrderByComparator tupleComparator; // Comparator for External Sort
-    Schema schema;
 
     public OrderBy(Operator base, int opType, int order, ArrayList<Attribute> attributeList) {
         super(opType);
@@ -78,14 +77,16 @@ public class OrderBy extends Operator {
     }
 
     private void updateAttributeIndices() {
+
         for (int i = 0; i < attributeList.size(); i++) {
             Attribute attribute = attributeList.get(i);
-            attributeIndices.add(schema.indexOf(attribute));
+            attributeIndices.add(this.schema.indexOf(attribute));
         }
     }
 
+    @Override
     public boolean open() {
-		int tupleSize = schema.getTupleSize();
+		int tupleSize = this.schema.getTupleSize();
 		this.batchsize = Batch.getPageSize() / tupleSize;
 
 		if (!base.open()) return false;
@@ -111,7 +112,6 @@ public class OrderBy extends Operator {
     public Object clone() {
 		//must deep clone EVERYTHING
 		Operator newbase = (Operator) this.base.clone();
-		//Schema newschema = (Schema) this.schema.clone();
 		Schema newschema = (Schema) newbase.getSchema();
 
 		ArrayList<Attribute> newOrderByList = new ArrayList<>();
