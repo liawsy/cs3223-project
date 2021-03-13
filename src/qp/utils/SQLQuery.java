@@ -113,4 +113,11 @@ public class SQLQuery {
             return 0;
         return joinList.size();
     }
+
+    public boolean isGroupBy() {
+        if (groupbyList == null || groupbyList.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
 }
