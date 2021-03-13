@@ -74,14 +74,13 @@ public class ExternalSort extends Operator {
                     break;
                 }
             }
-            numSortedRun++;
 
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
 
             // generating of sorted runs => considered as pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
-
+            numSortedRun++;
             inputBatch = base.next();
         }
         return numSortedRun;
