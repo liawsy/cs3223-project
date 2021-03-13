@@ -324,6 +324,7 @@ public class ExternalSort extends Operator {
                 Tuple tuple = (Tuple) finalSortedStream.readObject();
                 outputBatch.add(tuple);
             } catch (Exception e) {
+                System.out.println("FYI: External sort " + e.toString() + " in next().");
                 break;
             } 
         }

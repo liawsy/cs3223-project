@@ -175,10 +175,15 @@ public class QueryMain {
 
         /** Print each tuple in the result **/
         Batch resultbatch;
-        while ((resultbatch = root.next()) != null) {
+        resultbatch = root.next();
+        while (resultbatch != null && resultbatch.size() > 0) {    //if operators pepetually return batch of size 0 instead of null, will have infinite loop
+            System.out.println("current result batch size : " + resultbatch.size());
+            if (resultbatch.size() <= 0) { System.out.println("result size LEQ 0. An operator is not returning null when complete.");} 
+            
             for (int i = 0; i < resultbatch.size(); ++i) {
                 printTuple(resultbatch.get(i));
             }
+            resultbatch = root.next();
         }
         root.close();
         out.close();
