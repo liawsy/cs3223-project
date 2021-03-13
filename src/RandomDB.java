@@ -4,6 +4,7 @@ import qp.utils.Schema;
 import java.io.*;
 import java.util.*;
 
+//BUG: exists that when number of records in .det file > range of PK, RandomDB will freeze and become unresponsive
 public class RandomDB {
 
     static boolean[] pk;

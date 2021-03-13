@@ -27,7 +27,7 @@ public class PlanCost {
      * * then this plan is not feasible and return
      * * a cost of infinity
      **/
-    boolean isFeasible;
+    boolean isFeasible; //is set to true when calculateCost() doesn't support the Operator subtype passed in
 
     /**
      * Hashtable stores mapping from Attribute name to
@@ -76,10 +76,96 @@ public class PlanCost {
             return getStatistics((Project) node);
         } else if (node.getOpType() == OpType.SCAN) {
             return getStatistics((Scan) node);
-        }
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            return getStatistics((Distinct) node);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            return getStatistics((GroupBy) node);
+        }  
         System.out.println("operator is not supported");
         isFeasible = false;
         return 0;
+    }
+
+    /**
+     * groupby doesn't change the number of output tuples, only reorders them.     * 
+     * groupby's IO cost is the cost to sort the underlying base
+     * @param node
+     * @return
+     */
+    protected long getStatistics(GroupBy node) {
+        /**
+         * IO cost: need 
+         * - #pages of base, |N|
+         * - #buffers, B
+         * - log function, double Math.log(double)
+         * - ceil function, double Math.ceil(double)
+         */
+        
+         //calculating number of output tuples
+         long numouttuples = calculateCost(node.getBase());
+ 
+         //incrementing IO cost
+         int pagecapacity = Batch.getPageSize() / node.getSchema().getTupleSize();//implicit floor bc of integer division
+         int numpages = (int) Math.ceil((double)numouttuples / (double)pagecapacity);
+         //following the generate cost for sort merge
+         long numpasses = 1 + (long)Math.ceil(
+                                        Math.log(Math.ceil((double)numpages / (double)BufferManager.numBuffer)) / 
+                                        Math.log(BufferManager.numBuffer - 1));
+         long numIO = 2 * numpages * numpasses;
+         cost += numIO;
+ 
+         return numouttuples;
+         //won't change the number of distinct values in each attr, so no update to ht
+     }
+
+    /**
+     * Distinct might reduce the number of output tuples, 
+     * but does not modify the schema of the base table, hence 
+     * number of tuples per page should be unchanged.
+     * Incurs IO cost equal to doing 1 ExternalSort internally
+     */
+    protected long getStatistics(Distinct node) {
+        /**
+         * num tuples output is MIN of
+         * - #tuples in input
+         * - #possible distinct tuples
+         * 
+         * #possible distinct tuples is product of all distinct values of all cols of the tuple's schema
+         * but #possible can overflow easily, return early if #possible >= #outputtuples
+         * 
+         * IO cost: need 
+         * - #pages of base, |N|
+         * - #buffers, B
+         * - log function, double Math.log(double)
+         * - ceil function, double Math.ceil(double)
+         */
+        
+         //calculating number of output tuples
+        long numouttuples = calculateCost(node.getBase());  //numouttuples of base and sortedbase should be the same
+        long numpossibletuples = 1;//might overflow bc multiplying multiple longs tgt use for loop to exit before that
+        for (int i = 0; i < node.getSchema().getAttList().size(); ++i) {
+            Attribute attrholder = node.getSchema().getAttList().get(i);
+            numpossibletuples *= ht.get(attrholder);
+            if (numpossibletuples >= numouttuples) {
+                break;
+            }
+        }
+        if (numouttuples <= 0 || numpossibletuples <= 0) { System.out.println("Suspect long overflow"); System.exit(1);}
+        
+        numouttuples = Math.min(numouttuples, numpossibletuples);
+
+        //incrementing IO cost
+        int pagecapacity = Batch.getPageSize() / node.getSchema().getTupleSize();//implicit floor bc of integer division
+        int numpages = (int) Math.ceil((double)numouttuples / (double)pagecapacity);
+        //following the generate cost for sort merge
+        long numpasses = 1 + (long)Math.ceil(
+                                       Math.log(Math.ceil((double)numpages / (double)BufferManager.numBuffer)) / 
+                                       Math.log(BufferManager.numBuffer - 1));
+        long numIO = 2 * numpages * numpasses;
+        cost += numIO;
+
+        return numouttuples;
+        //i don't think distinct will change the number of distinct values in each attr, so no update to ht
     }
 
     /**
@@ -179,10 +265,13 @@ public class PlanCost {
         long outtuples;
         /** Calculate the number of tuples in result **/
         if (exprtype == Condition.EQUAL) {
-            outtuples = (long) Math.ceil((double) intuples / (double) numdistinct);
+            //BUGS: ?this is an estimation. assumption is that numtuples are distributed uniformly across the number of distinct attributes
+            outtuples = (long) Math.ceil((double) intuples / (double) numdistinct); 
         } else if (exprtype == Condition.NOTEQUAL) {
             outtuples = (long) Math.ceil(intuples - ((double) intuples / (double) numdistinct));
         } else {
+            //BUGS: ?this is an estimation. assumption is that on average, the attr compared against will be the average value.
+            //every other tuple has 0.5 chance of being GEQ / LEQ the average value
             outtuples = (long) Math.ceil(0.5 * intuples);
         }
 
@@ -190,11 +279,34 @@ public class PlanCost {
          ** Assuming the values are distributed uniformly along entire
          ** relation
          **/
+        /*
+        //proposed fix, replace next for loop which this code chunk
+        Condition cn = node.getCondition();
+        assert(cn.getOpType() == Condition.SELECT);
+        //comparing LHS attribute to RHS string value
+        //LHS is the select attribute affected
+        Attribute attri = cn.getLhs();
+        long oldvalue = ht.get(attri);
+        long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
+        ht.put(attri, newvalue);   //BUG: newvalue isn't inserted into ht
+        */
+
         for (int i = 0; i < schema.getNumCols(); ++i) {
             Attribute attri = schema.getAttribute(i);
             long oldvalue = ht.get(attri);
+            //BUG: ?
+            //claim: the expected #distinct will decrease ONLY for the attribute selected on
+            //for other cols, the expted #distinct will remain the same, with fewer occurances of each dist value
+            //E.g., for non-selection col:
+            //assume 100 distinct tuples, distributed uniformly across 1000 tuples in table
+            //each distinct value has expected 10 occurances.
+            //if we remove 0.3 of the tuples uniformly, we still expect
+            //100 distinct tuples, but distributed across 700 tuples, for
+            //7 occurances of each distinct value
+            //
+            //E.g., for selection col: we remove tuples in groups of their attribute column, so #dist should decrease
             long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
-            ht.put(attri, outtuples);
+            ht.put(attri, outtuples);   //BUG: newvalue isn't inserted into ht
         }
         return outtuples;
     }
