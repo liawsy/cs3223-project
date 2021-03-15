@@ -8,6 +8,9 @@ import qp.utils.Condition;
 import qp.utils.Tuple;
 
 public class SortMergeJoin extends Join {
+    Operator leftSorted;
+    Operator rightSorted;
+
     int batchSize;                    // Number of tuples per out batch
     ArrayList<Integer> leftIndices;   // Indices of the join attributes in left table
     ArrayList<Integer> rightIndices;  // Indices of the join attributes in right table
@@ -33,10 +36,6 @@ public class SortMergeJoin extends Join {
     }
 
     public boolean open() {
-        // sort left and right tables
-        left.open();
-        right.open();
-
         // batch size = num of tuples per batch
         int tuplesize = schema.getTupleSize();
         batchSize = Batch.getPageSize() / tuplesize;
@@ -50,6 +49,23 @@ public class SortMergeJoin extends Join {
             leftIndices.add(left.getSchema().indexOf(leftattr));
             rightIndices.add(right.getSchema().indexOf(rightattr));
         }
+
+        ArrayList<Attribute> leftAttrs = new ArrayList<>();
+        ArrayList<Attribute> rightAttrs = new ArrayList<>();
+        
+        for (Condition con : conditionList) {
+            Attribute leftattr = con.getLhs();
+            Attribute rightattr = (Attribute) con.getRhs();
+            leftAttrs.add(leftattr);
+            rightAttrs.add(rightattr);
+        }
+
+        leftSorted = new ExternalSort(left, leftAttrs, numBuff);
+        rightSorted = new ExternalSort(right, rightAttrs, numBuff);
+
+        // sort left and right tables
+        leftSorted.open();
+        rightSorted.open();
 
         // initialize values
         leftPtr = 0;
@@ -77,11 +93,11 @@ public class SortMergeJoin extends Join {
         // 1. if no batch read yet, read one batch in from both sides
         if (leftBatch == null) {
             leftPtr = 0;
-            leftBatch = left.next();
+            leftBatch = leftSorted.next();
         }
         if (rightBatch == null) {
             rightPtr = 0;
-            rightBatch = right.next();
+            rightBatch = rightSorted.next();
         }
 
         outBatch = new Batch(batchSize);
@@ -173,7 +189,7 @@ public class SortMergeJoin extends Join {
     
     private Tuple getNextLeftTuple() {
         if (leftPtr == leftBatch.size() - 1) {
-            leftBatch = left.next();
+            leftBatch = leftSorted.next();
             if (leftBatch == null) {
                 eosl = true;
                 return null;
@@ -185,7 +201,7 @@ public class SortMergeJoin extends Join {
 
     private Tuple peekNextRightTuple(int currIndex) {
         if (currIndex == rightBatch.size() - 1) {
-            rightBatch = right.next();
+            rightBatch = rightSorted.next();
             if (rightBatch == null) {
                 // eosr = true;
                 return null;
@@ -196,8 +212,8 @@ public class SortMergeJoin extends Join {
     }
 
     public boolean close() {
-        left.close();
-        right.close();
+        leftSorted.close();
+        rightSorted.close();
         return true;
     }
 
