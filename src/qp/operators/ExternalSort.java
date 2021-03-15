@@ -74,13 +74,14 @@ public class ExternalSort extends Operator {
                     break;
                 }
             }
-            numSortedRun++;
+            
 
             // sort tuples
             tuplesInSortedRun.sort(this::tupleComparator);
-
+            
             // generating of sorted runs => considered as pass 0
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
+            numSortedRun++;
 
             inputBatch = base.next();
         }
@@ -276,10 +277,10 @@ public class ExternalSort extends Operator {
      * @param finalPassId passId of the final sorted file
      */
     private void clearFiles(int finalPassId) {
-        File directory = new File("../operators");
+        File directory = new File("../classes");
         for (File f : directory.listFiles()) {
-            // keeps the last sorted file and all java files
-            if (!f.getName().startsWith("pass_" + finalPassId) && !f.getName().endsWith(".java")) {
+            // keeps ONLY the last sorted file and deletes all other sorted run files
+            if (f.getName().startsWith("pass_") && !f.getName().startsWith("pass_" + finalPassId)) {
                 f.delete();
             }
         }
@@ -323,6 +324,7 @@ public class ExternalSort extends Operator {
                 Tuple tuple = (Tuple) finalSortedStream.readObject();
                 outputBatch.add(tuple);
             } catch (Exception e) {
+                System.out.println("FYI: External sort " + e.toString() + " in next().");
                 break;
             } 
         }
