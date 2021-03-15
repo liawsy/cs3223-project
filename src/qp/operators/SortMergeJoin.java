@@ -81,12 +81,12 @@ public class SortMergeJoin extends Join {
         }
         if (rightBatch == null) {
             rightPtr = 0;
-            rightBatch = left.next();
+            rightBatch = right.next();
         }
 
         outBatch = new Batch(batchSize);
 
-        while (true) {
+        while (!outBatch.isFull()) {
             if (leftBatch == null) {
                 eosl = true;
                 return null;
@@ -94,9 +94,6 @@ public class SortMergeJoin extends Join {
             if (rightBatch == null) {
                 eosr = true;
                 return null;
-            }
-            if (outBatch.isFull()) {
-                return outBatch;
             }
 
             leftTuple = leftBatch.get(leftPtr);
@@ -140,6 +137,9 @@ public class SortMergeJoin extends Join {
                         if (peekRightTuple == null) {
                             eosr = true;
                             leftTuple = getNextLeftTuple();
+                            if (leftTuple == null) {
+                                return outBatch;
+                            }
                             rightPartitionPtr = 0;
                             continue;
                         }
@@ -168,6 +168,7 @@ public class SortMergeJoin extends Join {
                 rightPartitionPtr = 0;
             }
         }
+        return outBatch;
     }
     
     private Tuple getNextLeftTuple() {
