@@ -3,6 +3,7 @@ classes/*.md
 classes/*.stat
 classes/*.tbl
 classes/*.txt
+classes/pass*
 
 testcases/*.md
 testcases/*.stat
