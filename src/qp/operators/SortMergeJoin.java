@@ -40,30 +40,25 @@ public class SortMergeJoin extends Join {
         int tuplesize = schema.getTupleSize();
         batchSize = Batch.getPageSize() / tuplesize;
 
+        ArrayList<Attribute> leftAttrs = new ArrayList<>();
+        ArrayList<Attribute> rightAttrs = new ArrayList<>();
+
         /** find indices attributes of join conditions **/
         leftIndices = new ArrayList<>();
         rightIndices = new ArrayList<>();
         for (Condition con : conditionList) {
             Attribute leftattr = con.getLhs();
             Attribute rightattr = (Attribute) con.getRhs();
-            leftIndices.add(left.getSchema().indexOf(leftattr));
-            rightIndices.add(right.getSchema().indexOf(rightattr));
-        }
-
-        ArrayList<Attribute> leftAttrs = new ArrayList<>();
-        ArrayList<Attribute> rightAttrs = new ArrayList<>();
-        
-        for (Condition con : conditionList) {
-            Attribute leftattr = con.getLhs();
-            Attribute rightattr = (Attribute) con.getRhs();
             leftAttrs.add(leftattr);
             rightAttrs.add(rightattr);
+            leftIndices.add(left.getSchema().indexOf(leftattr));
+            rightIndices.add(right.getSchema().indexOf(rightattr));
         }
 
         leftSorted = new ExternalSort(left, leftAttrs, numBuff);
         rightSorted = new ExternalSort(right, rightAttrs, numBuff);
 
-        // sort left and right tables
+        // open left and right sorted tables
         leftSorted.open();
         rightSorted.open();
 
@@ -118,6 +113,7 @@ public class SortMergeJoin extends Join {
             if (rightPartition.isEmpty()) {
                 // while left < right: advance left
                 while (Tuple.compareTuples(leftTuple, rightTuple, leftIndices, rightIndices) < 0) {
+                    
                     leftTuple = getNextLeftTuple();
                 }
 
@@ -138,7 +134,6 @@ public class SortMergeJoin extends Join {
                 // put join result into outBatch
                 Tuple joinResult = leftTuple.joinWith(rightPartitionTuple);
                 outBatch.add(joinResult);
-                
 
                 // check if there is a next in partition
                 Tuple nextInRightPartition = null;
@@ -150,10 +145,13 @@ public class SortMergeJoin extends Join {
                     // peek right tuple
                     if (peekRightTuple == null) {
                         peekRightTuple = peekNextRightTuple(rightPtr);
+                        // reached the end of right table
                         if (peekRightTuple == null) {
                             eosr = true;
                             leftTuple = getNextLeftTuple();
+                            // reached the end of left table
                             if (leftTuple == null) {
+                                eosl = true;
                                 return outBatch;
                             }
                             rightPartitionPtr = 0;
