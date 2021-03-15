@@ -290,8 +290,6 @@ public class ExternalSort extends Operator {
         try {
             // add to file
             FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId, true);
-            
-            // FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId, true);
             ObjectOutputStream objectOut = new AppendableObjectOutputStream(fileOut);
             for (Tuple Tuple : sortedTuples) {
                 objectOut.writeObject(Tuple);
@@ -307,8 +305,6 @@ public class ExternalSort extends Operator {
         try {
             // add to file
             FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId);
-
-            // FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
