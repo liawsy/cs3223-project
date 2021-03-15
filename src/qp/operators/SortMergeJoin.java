@@ -21,6 +21,7 @@ public class SortMergeJoin extends Join {
     boolean eosr;                     // Whether end of stream (right table) is reached
     Tuple leftTuple;                  // current tuple from left table
     Tuple rightTuple;                 // current tuple from right table
+    Tuple peekRightTuple;              // next tuple from right table
     ArrayList<Tuple> rightPartition;  // collection of duplicates on right table
     int rightPartitionPtr;
 
@@ -57,6 +58,7 @@ public class SortMergeJoin extends Join {
         eosr = false;
         leftTuple = null;
         rightTuple = null;
+        peekRightTuple = null;
         leftBatch = null;
         rightBatch = null;
         rightPartition = new ArrayList<Tuple>();
@@ -66,34 +68,33 @@ public class SortMergeJoin extends Join {
     }
 
     public Batch next() {
-        // terminate if either file reaches end (no more tuples to merge)
-        if (eosl || eosr) {
+        // terminate if left file reaches end (no more tuples to merge)
+        if (eosl) {
             close();
             return null;
         }
         
         // 1. if no batch read yet, read one batch in from both sides
         if (leftBatch == null) {
+            leftPtr = 0;
             leftBatch = left.next();
         }
         if (rightBatch == null) {
+            rightPtr = 0;
             rightBatch = left.next();
         }
 
         outBatch = new Batch(batchSize);
 
         while (true) {
-            // if left batch is empty
             if (leftBatch == null) {
                 eosl = true;
                 return null;
             }
-            // if right batch is empty
             if (rightBatch == null) {
                 eosr = true;
                 return null;
             }
-            // if output batch is full, return it
             if (outBatch.isFull()) {
                 return outBatch;
             }
@@ -109,7 +110,8 @@ public class SortMergeJoin extends Join {
 
                 // while left > right: advance right
                 while (Tuple.compareTuples(leftTuple, rightTuple, leftIndices, rightIndices) > 0) {
-                    rightTuple = getNextRightTuple();
+                    rightTuple = peekNextRightTuple(rightPtr);
+                    rightPtr = (rightPtr + 1) % batchSize;
                 }
 
                 // once equal: put right tuple into right partition
@@ -117,51 +119,80 @@ public class SortMergeJoin extends Join {
                 rightPartitionPtr = 0;
             }
 
+            Tuple rightPartitionTuple = rightPartition.get(rightPartitionPtr);
             
-            if (leftTuple.checkJoin(rightTuple, leftIndices, rightIndices)) {
+            if (leftTuple.checkJoin(rightPartitionTuple, leftIndices, rightIndices)) {
                 // put join result into outBatch
-                Tuple joinResult = leftTuple.joinWith(rightTuple);
-                outBatch.add(joinResult);   
-                // advance right ptr and save into right partition            
-                rightTuple = getNextRightTuple();
-                rightPartition.add(rightTuple);
-                rightPartitionPtr++;
+                Tuple joinResult = leftTuple.joinWith(rightPartitionTuple);
+                outBatch.add(joinResult);
+                
+
+                // check if there is a next in partition
+                Tuple nextInRightPartition = null;
+                if (rightPartitionPtr + 1 < rightPartition.size()) {
+                    nextInRightPartition = rightPartition.get(rightPartitionPtr + 1);
+                }
+                
+                if (nextInRightPartition == null) { 
+                    // peek right tuple
+                    if (peekRightTuple == null) {
+                        peekRightTuple = peekNextRightTuple(rightPtr);
+                        if (peekRightTuple == null) {
+                            eosr = true;
+                            leftTuple = getNextLeftTuple();
+                            rightPartitionPtr = 0;
+                            continue;
+                        }
+                    }       
+                    
+                    // either there are more right tuples to add OR reached the end of right partition
+                    if (Tuple.compareTuples(rightPartitionTuple, peekRightTuple, rightIndices, rightIndices) == 0) {
+                        rightPartition.add(peekRightTuple);
+                        rightPartitionPtr++;
+                        rightTuple = peekRightTuple;
+                        rightPtr = (rightPtr + 1) % batchSize;
+                        peekRightTuple = null;
+
+                    } else if ((Tuple.compareTuples(rightPartitionTuple, peekRightTuple, rightIndices, rightIndices) > 0)) {
+                        leftTuple = getNextLeftTuple();   
+                        rightPartitionPtr = 0;
+                    }
+                } else {
+                    rightPartitionPtr++;
+                }
+
             } else {
-                // means right tuple has gone too far
-                // advance left ptr and loop to the start of right partition     
-                leftTuple = getNextLeftTuple();
+                rightTuple = peekRightTuple;
+                peekRightTuple = null;
+                rightPartition.clear();
                 rightPartitionPtr = 0;
             }
         }
-
     }
     
     private Tuple getNextLeftTuple() {
-        if (leftPtr == batchSize - 1) {
+        if (leftPtr == leftBatch.size() - 1) {
             leftBatch = left.next();
             if (leftBatch == null) {
                 eosl = true;
                 return null;
             }
         }
-
         leftPtr = (leftPtr + 1) % batchSize;
         return leftBatch.get(leftPtr);
     }
 
-    private Tuple getNextRightTuple() {
-        if (rightPtr == batchSize - 1) {
+    private Tuple peekNextRightTuple(int currIndex) {
+        if (currIndex == rightBatch.size() - 1) {
             rightBatch = right.next();
             if (rightBatch == null) {
-                eosr = true;
+                // eosr = true;
                 return null;
             }
         }
-
-        rightPtr = (rightPtr + 1) % batchSize;
-        return rightBatch.get(rightPtr);
+        int nextIndex = (currIndex + 1) % batchSize;
+        return rightBatch.get(nextIndex);
     }
-    
 
     public boolean close() {
         left.close();
