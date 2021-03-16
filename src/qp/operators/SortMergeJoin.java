@@ -58,8 +58,8 @@ public class SortMergeJoin extends Join {
         leftSorted = new ExternalSort(left, leftAttrs, numBuff);
         rightSorted = new ExternalSort(right, rightAttrs, numBuff);
 
-        leftSorted.setPrefix("left_");
-        rightSorted.setPrefix("right_");
+        leftSorted.setPrefix("SMJ-left_");
+        rightSorted.setPrefix("SMJ-right_");
 
         // open left and right sorted tables
         leftSorted.open();
@@ -116,7 +116,6 @@ public class SortMergeJoin extends Join {
             if (rightPartition.isEmpty()) {
                 // while left < right: advance left
                 while (Tuple.compareTuples(leftTuple, rightTuple, leftIndices, rightIndices) < 0) {
-                    
                     leftTuple = getNextLeftTuple();
                 }
 
@@ -155,9 +154,11 @@ public class SortMergeJoin extends Join {
                             // reached the end of left table
                             if (leftTuple == null) {
                                 eosl = true;
+                                leftBatch = null;
                                 return outBatch;
                             }
                             rightPartitionPtr = 0;
+                            rightPartitionTuple = rightPartition.get(rightPartitionPtr);
                             continue;
                         }
                     }       

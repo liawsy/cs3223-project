@@ -15,3 +15,5 @@ testcases/*.txt
 
 .classpath
 .project
+
+.DS_Store
