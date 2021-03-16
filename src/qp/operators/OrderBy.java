@@ -63,15 +63,20 @@ public class OrderBy extends Operator {
 
     @Override
     public boolean open() {
+        System.out.println("orderby open");
 		int tupleSize = this.schema.getTupleSize();
 		this.batchSize = Batch.getPageSize() / tupleSize;
 
+        System.out.println(base.getOpType());
+
 		if (!base.open()) return false;
-
+        System.out.println("orderby after base not open");
+        
         updateAttributeIndices();
-
+        System.out.println("orderby after attr indices");
+        
 		/**
-		 * Create the underlying sort operator on the orderby list
+         * Create the underlying sort operator on the orderby list
 		 */
         if (order == OrderByType.ASC) {
             sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), false);
@@ -79,7 +84,10 @@ public class OrderBy extends Operator {
             sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), true);
         }
         
-        return sortOp.open();
+        System.out.println("calling sort open");
+        boolean b = sortOp.open();
+        System.out.println("aft calling sort open");
+        return b;
     }
 
 

@@ -54,39 +54,51 @@ public class ExternalSort extends Operator {
     }
 
     public boolean open() {
+        System.out.println("grouped base = ext sort open()");
         if (!base.open()) {
             return false;
         }
-
+        System.out.println("aft ret false");
+        
         // find number of tuples per batch
         int tupleSize = schema.getTupleSize();
         tuplesPerBatch = Batch.getPageSize() / tupleSize;
-
+        
+        System.out.println("bef create sorted runs");
         int numSortedRun = createSortedRuns();
-
+        System.out.println("aft create sorted runs");
+        
+        System.out.println("bef merge sorted runs");
         mergeSortedRuns(numSortedRun);
+        System.out.println("aft merge sorted runs");
 
         return true;
     }
 
     public int createSortedRuns() {
-
+        System.out.println("create sorted runs: " + base.getOpType());
         Batch inputBatch = base.next();
+        System.out.println("create sorted runs: " + base.getOpType() + " after base next");
         int numSortedRun = 0; // sorted run id starts at 0
 
         // while the table is not empty
-        while (inputBatch != null) {
-
+        if (inputBatch == null) {
+            System.out.println("input is null");
+        }
+        while (inputBatch != null && inputBatch.size() > 0) {
+            System.out.println("in while");
             ArrayList<Tuple> tuplesInSortedRun = new ArrayList<Tuple>();
-
+            
             // 1 buffer = 1 batch = 1 page
             // read in as many batches as number of buffers
             for (int i = 0; i < numBuffer; i++) {
                 // adds all tuples from input batch to sorted run
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
-
+                
+                System.out.println("in while base next");
                 inputBatch = base.next();
-                if (inputBatch == null) {
+                System.out.println("after while base next " + i + " " + numBuffer);
+                if (inputBatch == null || inputBatch.size() == 0) {
                     break;
                 }
             }
@@ -96,11 +108,19 @@ public class ExternalSort extends Operator {
             tuplesInSortedRun.sort(this::tupleComparator);
             
             // generating of sorted runs => considered as pass 0
+            System.out.println("bef write tuples to file");
             writeTuplesToFile(tuplesInSortedRun, numSortedRun, 0);
+            System.out.println("aft write tuples to file");
             numSortedRun++;
 
             inputBatch = base.next();
+            if (inputBatch == null) {
+                System.out.println("input batch is null and type: " + base.getOpType());
+            } else {
+                System.out.println("input batch not null and type: " + base.getOpType() + " and size: " + inputBatch.size());
+            }
         }
+        System.out.println("returning numsortedrun");
         return numSortedRun;
     }
 

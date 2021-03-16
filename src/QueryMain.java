@@ -156,23 +156,32 @@ public class QueryMain {
      * Execute query and print run statistics
      **/
     public static double executeQuery(Operator root, String resultfile) {
+        System.out.println("execute query");
         long starttime = System.currentTimeMillis();
-        if (root.open() == false) {
+        System.out.println("bef root open");
+        boolean tmp = root.open();
+        System.out.println("aft root open");
+        if (tmp == false) {
+            System.out.println("inside if");
             System.out.println("Root: Error in opening of root");
             System.exit(1);
         }
+        System.out.println("before try");
         try {
+            System.out.println("inside try");
             out = new PrintWriter(new BufferedWriter(new FileWriter(resultfile)));
         } catch (IOException io) {
             System.out.println("QueryMain:error in opening result file: " + resultfile);
             System.exit(1);
         }
-
+        
+        System.out.println("before schema");
         /** Print the schema of the result **/
         Schema schema = root.getSchema();
         numAtts = schema.getNumCols();
         printSchema(schema);
-
+        System.out.println("after schema");
+        
         /** Print each tuple in the result **/
         Batch resultbatch;
         resultbatch = root.next();

@@ -35,10 +35,12 @@ public class GroupBy extends Operator {
 	 */
 	@Override
     public boolean open() {
+		System.out.println("groupby open()");
 		int tupleSize = schema.getTupleSize();
 		this.batchsize = Batch.getPageSize() / tupleSize;
 		
 		if (!base.open()) return false;
+		System.out.println("groupby after ret false");
 			
 		/**
 		 * Create the underlying sort operator on the groupby list
@@ -48,7 +50,9 @@ public class GroupBy extends Operator {
 		groupedbase = extsort;
 
 		//if the sorted based has error opening, cannot feed result pages to caller
+		System.out.println("before groupedbase open");
 		boolean canopen = groupedbase.open();
+		System.out.println("after groupedbase open");
         return canopen;
     }
 
