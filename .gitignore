@@ -3,6 +3,10 @@ classes/*.md
 classes/*.stat
 classes/*.tbl
 classes/*.txt
+classes/BNJtemp-*
+classes/NJtemp-*
+classes/pass_*
+classes/qp/operators/*.class
 
 testcases/*.md
 testcases/*.stat
