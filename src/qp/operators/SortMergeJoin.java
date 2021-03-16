@@ -133,7 +133,24 @@ public class SortMergeJoin extends Join {
                     rightPartitionPtr++;
                     rightTuple = rightPartition.get(rightPartitionPtr);
                 } else {
-
+                    // move left pointer forward
+                    Tuple peekLeftTuple = getNextLeftTuple();
+                    if (peekLeftTuple == null) {
+                        eosl = true;
+                        break;
+                    }
+                    int compareLeftTuples = Tuple.compareTuples(peekLeftTuple, leftTuple, leftIndices, leftIndices);
+                    // if peekLeft is bigger than current left tuple, create a new partition
+                    if (compareLeftTuples > 0) {
+                        createRightPartition();
+                        if (rightPartition.isEmpty()) {
+                            eosr = true;
+                            break;
+                        }
+                    }
+                    leftTuple = peekLeftTuple;
+                    rightPartitionPtr = 0;
+                    rightTuple = rightPartition.get(rightPartitionPtr);
                 }
 
             } else if (result < 0) {
