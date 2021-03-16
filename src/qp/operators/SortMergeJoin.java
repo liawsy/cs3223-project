@@ -8,8 +8,8 @@ import qp.utils.Condition;
 import qp.utils.Tuple;
 
 public class SortMergeJoin extends Join {
-    Operator leftSorted;
-    Operator rightSorted;
+    ExternalSort leftSorted;
+    ExternalSort rightSorted;
 
     int batchSize;                    // Number of tuples per out batch
     ArrayList<Integer> leftIndices;   // Indices of the join attributes in left table
@@ -57,6 +57,9 @@ public class SortMergeJoin extends Join {
 
         leftSorted = new ExternalSort(left, leftAttrs, numBuff);
         rightSorted = new ExternalSort(right, rightAttrs, numBuff);
+
+        leftSorted.setPrefix("left_");
+        rightSorted.setPrefix("right_");
 
         // open left and right sorted tables
         leftSorted.open();
