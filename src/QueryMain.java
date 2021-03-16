@@ -28,7 +28,7 @@ public class QueryMain {
         Batch.setPageSize(getPageSize(args, in));
 
         SQLQuery sqlquery = getSQLQuery(args[0]);
-        configureBufferManager(sqlquery.getNumJoin(), args, in);
+        configureBufferManager(sqlquery, args, in);
 
         Operator root = getQueryPlan(sqlquery);
         printFinalPlan(root, args, in);
@@ -86,8 +86,9 @@ public class QueryMain {
      * If there are joins then assigns buffers to each join operator while preparing the plan.
      * As buffer manager is not implemented, just input the number of buffers available.
      **/
-    private static void configureBufferManager(int numJoin, String[] args, BufferedReader in) {
-        if (numJoin != 0) {
+    private static void configureBufferManager(SQLQuery sqlquery, String[] args, BufferedReader in) {
+        int numJoin = sqlquery.getNumJoin();
+        if (numJoin != 0 || sqlquery.isDistinct() || sqlquery.isGroupBy()) {    //distinct & groupby uses ext sort which requires buffers
             int numBuff = 1000;
             if (args.length < 4) {
                 System.out.println("enter the number of buffers available");
@@ -104,7 +105,7 @@ public class QueryMain {
         /** Check the number of buffers available is enough or not **/
         int numBuff = BufferManager.getBuffersPerJoin();
         if (numJoin > 0 && numBuff < 3) {
-            System.out.println("Minimum 3 buffers are required per join operator ");
+            System.out.println("Minimum 3 buffers are required per join / distinct operator ");
             System.exit(1);
         }
     }
@@ -174,10 +175,15 @@ public class QueryMain {
 
         /** Print each tuple in the result **/
         Batch resultbatch;
-        while ((resultbatch = root.next()) != null) {
+        resultbatch = root.next();
+        while (resultbatch != null && resultbatch.size() > 0) {    //if operators pepetually return batch of size 0 instead of null, will have infinite loop
+            System.out.println("current result batch size : " + resultbatch.size());
+            if (resultbatch.size() <= 0) { System.out.println("result size LEQ 0. Might be an operator is not returning null when complete.");} 
+            
             for (int i = 0; i < resultbatch.size(); ++i) {
                 printTuple(resultbatch.get(i));
             }
+            resultbatch = root.next();
         }
         root.close();
         out.close();
