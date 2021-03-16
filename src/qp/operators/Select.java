@@ -5,7 +5,7 @@
 package qp.operators;
 
 import qp.utils.*;
-
+    
 public class Select extends Operator {
 
     Operator base;  // Base operator

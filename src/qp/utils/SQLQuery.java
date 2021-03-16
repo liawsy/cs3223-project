@@ -22,7 +22,8 @@ public class SQLQuery {
     ArrayList<Attribute> orderbyList;    // List of attibutes in orderby clause
 
     boolean isDistinct = false;          // Whether distinct key word appeared in select clause
-
+    boolean isDesc = false;              // Whether orderby output should be in descending order
+    
     public SQLQuery(ArrayList<Attribute> list1, ArrayList<String> list2, ArrayList<Condition> list3) {
         projectList = list1;
         fromList = list2;
@@ -72,9 +73,18 @@ public class SQLQuery {
         isDistinct = flag;
     }
 
+    public void setIsDesc(boolean flag) {
+        isDesc = flag;
+    }
+
     public boolean isDistinct() {
         return isDistinct;
     }
+
+    public boolean isDesc() {
+        return isDesc;
+    }
+
 
     public ArrayList<Attribute> getProjectList() {
         return projectList;
@@ -104,9 +114,13 @@ public class SQLQuery {
         return groupbyList;
     }
 
-    public void setOrderByList(ArrayList<Attribute> list) { orderbyList = list; }
+    public void setOrderByList(ArrayList<Attribute> list) { 
+        orderbyList = list; 
+    }
 
-    public ArrayList<Attribute> getOrderByList() { return orderbyList; }
+    public ArrayList<Attribute> getOrderByList() { 
+        return orderbyList; 
+    }
 
     public int getNumJoin() {
         if (joinList == null)
