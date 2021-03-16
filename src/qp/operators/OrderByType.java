@@ -4,7 +4,7 @@
  * you have implemented in your query processor
  **/
 
-package qp.utils;
+package qp.operators;
 
 public class OrderByType {
 

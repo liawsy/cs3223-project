@@ -5,7 +5,6 @@
 package qp.operators;
 
 import qp.operators.ExternalSort;
-import qp.operators.OrderByType;
 
 import qp.optimizer.BufferManager;
 
