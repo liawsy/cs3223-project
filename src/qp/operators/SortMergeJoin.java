@@ -57,8 +57,8 @@ public class SortMergeJoin extends Join {
         leftSorted = new ExternalSort(left, leftAttrs, numBuff);
         rightSorted = new ExternalSort(right, rightAttrs, numBuff);
 
-        leftSorted.setPrefix("SMJ-left_");
-        rightSorted.setPrefix("SMJ-right_");
+        // leftSorted.setPrefix("SMJ-left_");
+        // rightSorted.setPrefix("SMJ-right_");
 
         // open left and right sorted tables
         leftSorted.open();

@@ -64,9 +64,9 @@ public class OrderBy extends Operator {
 		 * Create the underlying sort operator on the orderby list
 		 */
         if (order == OrderByType.ASC) {
-            sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), false);
+            // sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), false);
         } else {
-            sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), true);
+            // sortOp = new ExternalSort(base, attributeList, BufferManager.getNumBuffer(), true);
         }
         
         return sortOp.open();

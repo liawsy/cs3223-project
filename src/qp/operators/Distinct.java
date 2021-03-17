@@ -61,9 +61,9 @@ public class Distinct extends Operator {
 		 * Base is sorted on ALL its attributes
 		 */
 		ArrayList<Attribute> sortattrs = base.getSchema().getAttList();
-		ExternalSort extsort = new ExternalSort(base, sortattrs, BufferManager.getNumBuffer());
+		// ExternalSort extsort = new ExternalSort(base, sortattrs, BufferManager.getNumBuffer());
 		//ExternalSortStub extsort = new ExternalSortStub(base, sortattrs, BufferManager.getNumBuffer());
-		sortedbase = extsort;
+		// sortedbase = extsort;
 
 		//if the sorted based has error opening, cannot feed result pages to caller
 		boolean canopen = sortedbase.open();
