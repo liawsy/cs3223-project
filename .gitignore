@@ -8,6 +8,7 @@ classes/BNJtemp-*
 classes/NJtemp-*
 classes/pass_*
 classes/qp/operators/*.class
+classes/SMJ*
 
 testcases/*.md
 testcases/*.stat
