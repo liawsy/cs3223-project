@@ -230,7 +230,6 @@ public class QueryMain {
     protected static void cleanFiles() {
         File directory = new File("../classes");
         for (File f : directory.listFiles()) {
-            // keeps ONLY the last sorted file and deletes all other sorted run files
             String fileName = f.getName();
             if (fileName.startsWith("pass_") || fileName.startsWith("BNJtemp-") || fileName.startsWith("NJtemp-") || fileName.startsWith("SMJ-")) {
                 f.delete();
