@@ -134,4 +134,11 @@ public class SQLQuery {
         }
         return true;
     }
+
+    public boolean isOrderBy() {
+        if (orderbyList == null || orderbyList.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
 }
