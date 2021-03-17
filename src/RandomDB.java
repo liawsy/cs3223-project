@@ -110,15 +110,17 @@ public class RandomDB {
                 attrlist.add(attr);
                 i++;
             }
+            System.out.println(1);
             Schema schema = new Schema(attrlist);
             schema.setTupleSize(size);
             outmd.writeObject(schema);
             outmd.close();
-
+            System.out.println(2);
+            
             for (i = 0; i < numtuple; ++i) {
                 for (int j = 0; j < numCol; ++j) {
                     if (datatype[j].equals("STRING")) {
-                        String temp = rdb.randString(range[j]);
+                        String temp = rdb.randString(range[j]); //<--- bug doesn't do pk validation on STRING PKs
                         outtbl.print(temp + "\t");
                     } else if (datatype[j].equals("FLOAT")) {
                         float value = range[j] * random.nextFloat();
@@ -126,8 +128,9 @@ public class RandomDB {
                     } else if (datatype[j].equals("INTEGER")) {
                         if (keytype[j].equals("PK")) {
                             int numb = random.nextInt(range[0]);
-                            while (pk[numb] == true) {
-                                numb = random.nextInt(range[0]);
+                            while (pk[numb] == true) {//<--- this is where we get stuck in inf loop when generating more records than INTEGER pk range. If have >1 col of PK, doesn't allow product of all their ranges as max #records
+                                System.out.println("gay");
+                                numb = random.nextInt(range[0]); 
                             }
                             pk[numb] = true;
                             outtbl.print(numb + "\t");
@@ -139,16 +142,19 @@ public class RandomDB {
                             }
                         }
                     }
+                    System.out.println(3);
                 }
                 if (i != numtuple - 1)
-                    outtbl.println();
+                outtbl.println();
             }
             outtbl.close();
-
+            System.out.println(4);
+            
             /** printing the number of distinct values of each column
              in <tablename>.stat file
              **/
             for (i = 0; i < numCol; ++i) {
+                System.out.println(5);
                 if (datatype[i].equals("STRING")) {
                     outstat.print(numtuple + "\t");
                 } else if (datatype[i].equals("FLOAT")) {
@@ -162,20 +168,22 @@ public class RandomDB {
                         outstat.print(numdist + "\t");
                     } else {
                         if (numtuple < range[i])
-                            outstat.print(numtuple + "\t");
+                        outstat.print(numtuple + "\t");
                         else
-                            outstat.print(range[i] + "\t");
+                        outstat.print(range[i] + "\t");
                     }
                 }
             }
             outstat.close();
             in.close();
         } catch (IOException io) {
+            System.out.println(6);
             System.out.println("error in IO ");
             System.exit(1);
         }
+        System.out.println(7);
     }
-
+    
     /**
      * Generates a random string of length equal to range
      **/
