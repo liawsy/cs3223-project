@@ -23,6 +23,7 @@ public class ExternalSort extends Operator {
     int numBuffer;      // total number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
     ObjectInputStream finalSortedStream;    // final sorted stream to read
+    boolean isEos = false;  // tracks whether final sorted output stream has reached eos
     boolean isDesc; // sort by descending order
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
@@ -338,12 +339,17 @@ public class ExternalSort extends Operator {
 
     public Batch next() {
         // return next batch of sorted tuple
+        if (isEos) {
+            close();
+            return null;
+        }
         Batch outputBatch = new Batch(tuplesPerBatch);
         while (!outputBatch.isFull()) {
             try {
                 Tuple tuple = (Tuple) finalSortedStream.readObject();
                 outputBatch.add(tuple);
             } catch (Exception e) {
+                isEos = true;
                 System.out.println("FYI: External sort " + e.toString() + " in next().");
                 break;
             } 
