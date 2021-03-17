@@ -24,7 +24,6 @@ public class ExternalSort extends Operator {
     int numBuffer;      // total number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
     ObjectInputStream finalSortedStream;    // final sorted stream to read
-    String prefix = ""; // default prefix is empty string
     boolean isEos = false;  // tracks whether final sorted output stream has reached eos
     boolean isDesc; // sort by descending order
     private final String uuid = UUID.randomUUID().toString();
@@ -55,10 +54,6 @@ public class ExternalSort extends Operator {
             Attribute attribute = attributeList.get(i);
             attributeIndices.add(schema.indexOf(attribute));
         }
-    }
-
-    public void setPrefix(String prefixToSet) {
-        prefix = prefixToSet;
     }
 
     public boolean open() {
