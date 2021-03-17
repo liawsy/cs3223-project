@@ -180,11 +180,15 @@ public class SortMergeJoin extends Join {
             eosl = true;
             return null;
         } else if (leftPtr == leftBatch.size()) {
-            leftBatch = leftSorted.next();
             leftPtr = 0;
+            leftBatch = leftSorted.next();
+            if (leftBatch == null) {
+                eosl = true;
+                return null;
+            }
         }
 
-        if (leftBatch == null || leftBatch.size() <= leftPtr) {
+        if (leftBatch.size() <= leftPtr) {
             eosl = true;
             return null;
         }
@@ -198,11 +202,14 @@ public class SortMergeJoin extends Join {
         if (rightBatch == null) {
             return null;
         } else if (rightPtr == rightBatch.size()) {
-            rightBatch = rightSorted.next();
             rightPtr = 0;
+            rightBatch = rightSorted.next();
+            if (rightBatch == null) {
+                return null;
+            }
         }
 
-        if (rightBatch == null || rightBatch.size() <= rightPtr) {
+        if (rightBatch.size() <= rightPtr) {
             return null;
         }
 

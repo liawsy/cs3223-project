@@ -248,7 +248,7 @@ public class PlanCost {
     }
 
     private long externalSortCost(long numPages, long numBuff) {
-        int numPass = 1 + (int) Math.ceil(Math.log(Math.ceil(numPages / (1.0 * numBuff))) / Math.log(numPages - 1) );
+        int numPass = 1 + (int) Math.ceil(Math.log(Math.ceil(numPages / (1.0 * numBuff))) / Math.log(numBuff - 1) );
         return numPass * (2 * numPages);
     }
 
