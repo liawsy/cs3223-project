@@ -59,13 +59,14 @@ public class RandomInitialPlan {
             createJoinOp();
         }
         createProjectOp();
-        if (sqlquery.isDistinct()) {
-            createDistinctOp();     
-        }
+        
         if (sqlquery.isGroupBy()) {
             createGroupByOp();
         }
-        if (sqlquery.getOrderByList().size() > 0) {
+        if (sqlquery.isDistinct()) {
+            createDistinctOp();     
+        }
+        if (sqlquery.isOrderBy()) {
             createOrderByOp(sqlquery.isDesc());
         }
         return root;
