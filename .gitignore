@@ -3,10 +3,12 @@ classes/*.md
 classes/*.stat
 classes/*.tbl
 classes/*.txt
+classes/pass*
 classes/BNJtemp-*
 classes/NJtemp-*
 classes/pass_*
 classes/qp/operators/*.class
+classes/SMJ*
 
 testcases/*.md
 testcases/*.stat
@@ -18,3 +20,5 @@ testcases/*.txt
 
 .classpath
 .project
+
+.DS_Store
