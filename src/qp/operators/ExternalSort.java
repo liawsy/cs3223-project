@@ -23,6 +23,8 @@ public class ExternalSort extends Operator {
     int numBuffer;      // total number of buffer available
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
     ObjectInputStream finalSortedStream;    // final sorted stream to read
+    String prefix = ""; // default prefix is empty string
+    boolean isEos = false;  // tracks whether final sorted output stream has reached eos
     boolean isDesc; // sort by descending order
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
@@ -51,6 +53,10 @@ public class ExternalSort extends Operator {
             Attribute attribute = attributeList.get(i);
             attributeIndices.add(schema.indexOf(attribute));
         }
+    }
+
+    public void setPrefix(String prefixToSet) {
+        prefix = prefixToSet;
     }
 
     public boolean open() {
@@ -122,7 +128,7 @@ public class ExternalSort extends Operator {
         }
         clearFiles(passId);
         try {
-            FileInputStream finalSortedFile = new FileInputStream("pass_" + passId + "_sorted_run_0");
+            FileInputStream finalSortedFile = new FileInputStream(prefix + "pass_" + passId + "_sorted_run_0");
             finalSortedStream = new ObjectInputStream(finalSortedFile);
         } catch (Exception e) {
             e.printStackTrace();
@@ -146,7 +152,7 @@ public class ExternalSort extends Operator {
             Batch inputBatch = new Batch(tuplesPerBatch);
             // 1. set up ObjectInputStreams to read from file
             try {
-                FileInputStream fileIn = new FileInputStream("pass_" + passId + "_sorted_run_" + i);
+                FileInputStream fileIn = new FileInputStream(prefix + "pass_" + passId + "_sorted_run_" + i);
                 ObjectInputStream inStream = new ObjectInputStream(fileIn);
                 inputStreams[arrIndex] = inStream;
                 inputEos[arrIndex] = false;
@@ -209,7 +215,7 @@ public class ExternalSort extends Operator {
 
                 ArrayList<Tuple> TuplesToWrite = outputBatch.getTuples();
                 
-                File tempFile = new File("pass_" + outputPassId + "_sorted_run_" + outputRunId);
+                File tempFile = new File(prefix + "pass_" + outputPassId + "_sorted_run_" + outputRunId);
                 if (tempFile.exists()) {
                     writeTuplesToExistingFile(TuplesToWrite, outputRunId, outputPassId);
                 } else {
@@ -300,16 +306,16 @@ public class ExternalSort extends Operator {
         File directory = new File("../classes");
         for (File f : directory.listFiles()) {
             // keeps ONLY the last sorted file and deletes all other sorted run files
-            if (f.getName().startsWith("pass_") && !f.getName().startsWith("pass_" + finalPassId)) {
+            if (f.getName().startsWith(prefix + "pass_") && !f.getName().startsWith(prefix + "pass_" + finalPassId)) {
                 f.delete();
             }
         }
     }
 
-    private static void writeTuplesToExistingFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
+    private void writeTuplesToExistingFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
         try {
             // add to file
-            FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId, true);
+            FileOutputStream fileOut = new FileOutputStream(prefix + "pass_" + passId + "_sorted_run_" + sortedRunId, true);
             ObjectOutputStream objectOut = new AppendableObjectOutputStream(fileOut);
             for (Tuple Tuple : sortedTuples) {
                 objectOut.writeObject(Tuple);
@@ -324,7 +330,7 @@ public class ExternalSort extends Operator {
     private void writeTuplesToFile(ArrayList<Tuple> sortedTuples, int sortedRunId, int passId) {
         try {
             // add to file
-            FileOutputStream fileOut = new FileOutputStream("pass_" + passId + "_sorted_run_" + sortedRunId);
+            FileOutputStream fileOut = new FileOutputStream(prefix + "pass_" + passId + "_sorted_run_" + sortedRunId);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             for (Tuple tuple : sortedTuples) {
                 objectOut.writeObject(tuple);
@@ -338,12 +344,17 @@ public class ExternalSort extends Operator {
 
     public Batch next() {
         // return next batch of sorted tuple
+        if (isEos) {
+            close();
+            return null;
+        }
         Batch outputBatch = new Batch(tuplesPerBatch);
         while (!outputBatch.isFull()) {
             try {
                 Tuple tuple = (Tuple) finalSortedStream.readObject();
                 outputBatch.add(tuple);
             } catch (Exception e) {
+                isEos = true;
                 System.out.println("FYI: External sort " + e.toString() + " in next().");
                 break;
             } 
