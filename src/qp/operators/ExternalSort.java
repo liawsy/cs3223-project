@@ -57,14 +57,6 @@ public class ExternalSort extends Operator {
         }
     }
 
-    public Schema getSchema() {
-        return schema;
-    }
-
-    public void setSchema(Schema schema) {
-        this.schema = schema;
-    }
-
     public void setPrefix(String prefixToSet) {
         prefix = prefixToSet;
     }
