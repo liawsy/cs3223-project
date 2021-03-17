@@ -231,7 +231,7 @@ public class QueryMain {
         File directory = new File("../classes");
         for (File f : directory.listFiles()) {
             String fileName = f.getName();
-            if (fileName.startsWith("pass_") || fileName.startsWith("BNJtemp-") || fileName.startsWith("NJtemp-") || fileName.startsWith("SMJ-")) {
+            if (fileName.startsWith("sort_") || fileName.startsWith("BNJtemp-") || fileName.startsWith("NJtemp-") || fileName.startsWith("SMJ-")) {
                 f.delete();
             }
         }
