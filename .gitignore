@@ -4,6 +4,10 @@ classes/*.stat
 classes/*.tbl
 classes/*.txt
 classes/pass*
+classes/BNJtemp-*
+classes/NJtemp-*
+classes/pass_*
+classes/qp/operators/*.class
 
 testcases/*.md
 testcases/*.stat

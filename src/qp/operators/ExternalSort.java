@@ -24,6 +24,8 @@ public class ExternalSort extends Operator {
     ArrayList<Integer> attributeIndices = new ArrayList<>(); // index of attributes to sort on
     ObjectInputStream finalSortedStream;    // final sorted stream to read
     String prefix = ""; // default prefix is empty string
+    boolean isEos = false;  // tracks whether final sorted output stream has reached eos
+    boolean isDesc; // sort by descending order
 
     public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer) {
         super(OpType.SORT);
@@ -31,6 +33,21 @@ public class ExternalSort extends Operator {
         this.base = base;
         this.schema = base.schema;
         this.numBuffer = numBuffer;
+        this.isDesc = false;
+
+        for (int i = 0; i < attributeList.size(); i++) {
+            Attribute attribute = attributeList.get(i);
+            attributeIndices.add(schema.indexOf(attribute));
+        }
+    }
+
+    public ExternalSort(Operator base, ArrayList<Attribute> attributeList, int numBuffer, boolean isDesc) {
+        super(OpType.SORT);
+
+        this.base = base;
+        this.schema = base.schema;
+        this.numBuffer = numBuffer;
+        this.isDesc = isDesc;
 
         for (int i = 0; i < attributeList.size(); i++) {
             Attribute attribute = attributeList.get(i);
@@ -271,7 +288,11 @@ public class ExternalSort extends Operator {
         for (int i = 0; i < attributeIndices.size(); i++) {
             result = Tuple.compareTuples(t1, t2, attributeIndices.get(i));
             if (result != 0) {
-                return result;
+                if (isDesc) {
+                    return result * -1;
+                } else {
+                    return result;
+                }
             }
         }
         return result;
@@ -323,12 +344,17 @@ public class ExternalSort extends Operator {
 
     public Batch next() {
         // return next batch of sorted tuple
+        if (isEos) {
+            close();
+            return null;
+        }
         Batch outputBatch = new Batch(tuplesPerBatch);
         while (!outputBatch.isFull()) {
             try {
                 Tuple tuple = (Tuple) finalSortedStream.readObject();
                 outputBatch.add(tuple);
             } catch (Exception e) {
+                isEos = true;
                 System.out.println("FYI: External sort " + e.toString() + " in next().");
                 break;
             } 

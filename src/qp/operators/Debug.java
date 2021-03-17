@@ -125,6 +125,10 @@ public class Debug {
             System.out.print("GroupBy(");
             PPrint(((GroupBy) node).getBase());
             System.out.print(")");
+        } else if (optype == OpType.ORDERBY) {
+            System.out.print("OrderBy(");
+            PPrint(((OrderBy) node).getBase());
+            System.out.print(")");
         }
     }
 
