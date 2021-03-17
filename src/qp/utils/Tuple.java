@@ -17,9 +17,7 @@ public class Tuple implements Serializable {
     public Tuple(ArrayList<Object> d) {
         _data = d;
     }
-    public int getSize() {
-        return _data.size();
-    }
+
     /**
      * Accessor for data
      */
