@@ -96,12 +96,11 @@ public class SortMergeJoin extends Join {
                 return null;
             }
             // try reading in one tuple on the left table
-            leftTuple = getNextLeftTuple();
+            leftTuple = getLeftTupleByIndex();
             if (leftTuple == null) {
                 eosl = true;
                 return null;
             }
-            leftPtr = 0;
         }
 
         if (rightBatch == null) {
@@ -116,7 +115,6 @@ public class SortMergeJoin extends Join {
                 eosr = true;
                 return null;
             }
-            rightPtr = 0;
             rightPartitionPtr = 0;
             rightTuple = rightPartition.get(rightPartitionPtr);
         }
@@ -125,7 +123,27 @@ public class SortMergeJoin extends Join {
         
         while (!outBatch.isFull()) {
             int result = Tuple.compareTuples(leftTuple, rightTuple, leftIndices, rightIndices);
-            if (result == 0) {
+            
+            // left < right
+            if (result < 0) {
+                leftTuple = getLeftTupleByIndex();
+                if (leftTuple == null) {
+                    eosl = true;
+                    break;
+                }
+
+            // left > right
+            } else if (result > 0) {
+                createRightPartition();
+                if (rightPartition.size() == 0) {
+                    eosr = true;
+                    break;
+                }
+                rightPartitionPtr = 0;
+                rightTuple = rightPartition.get(rightPartitionPtr);
+            
+            // left == right
+            } else {
                 outBatch.add(leftTuple.joinWith(rightTuple));
 
                 // if there are more tuples in the right partition
@@ -134,7 +152,8 @@ public class SortMergeJoin extends Join {
                     rightTuple = rightPartition.get(rightPartitionPtr);
                 } else {
                     // move left pointer forward
-                    Tuple peekLeftTuple = getNextLeftTuple();
+                    Tuple peekLeftTuple = getLeftTupleByIndex();
+                    leftTuple = peekLeftTuple;
                     if (peekLeftTuple == null) {
                         eosl = true;
                         break;
@@ -148,31 +167,15 @@ public class SortMergeJoin extends Join {
                             break;
                         }
                     }
-                    leftTuple = peekLeftTuple;
                     rightPartitionPtr = 0;
                     rightTuple = rightPartition.get(rightPartitionPtr);
                 }
-
-            } else if (result < 0) {
-                leftTuple = getNextLeftTuple();
-                if (leftTuple == null) {
-                    eosl = true;
-                    break;
-                }
-            } else { // result > 0
-                createRightPartition();
-                if (rightPartition.size() == 0) {
-                    eosr = true;
-                    break;
-                }
-                rightPartitionPtr = 0;
-                rightTuple = rightPartition.get(rightPartitionPtr);
             }
         }
         return outBatch;
     }
 
-    private Tuple getNextLeftTuple() {
+    private Tuple getLeftTupleByIndex() {
         if (leftBatch == null) {
             eosl = true;
             return null;
@@ -191,7 +194,7 @@ public class SortMergeJoin extends Join {
         return nextLeftTuple;
     }
 
-    private Tuple getNextRightTuple() {
+    private Tuple getRightTupleByIndex() {
         if (rightBatch == null) {
             return null;
         } else if (rightPtr == rightBatch.size()) {
@@ -203,28 +206,23 @@ public class SortMergeJoin extends Join {
             return null;
         }
 
-        Tuple next = rightBatch.get(rightPtr);
+        Tuple nextRightTuple = rightBatch.get(rightPtr);
         rightPtr++;
-        return next;
+        return nextRightTuple;
     }
 
     private void createRightPartition() {
         rightPartition.clear();
-        int result = 0;
         if (peekRightTuple == null) {
-            peekRightTuple = getNextRightTuple();
-            if (peekRightTuple == null) {
-                return;
-            }
+            peekRightTuple = getRightTupleByIndex();
+            if (peekRightTuple == null) return;
         }
 
-        while (result == 0) {
+        Tuple firstRightTuple = peekRightTuple;
+        while (Tuple.compareTuples(firstRightTuple, peekRightTuple, rightIndices, rightIndices) == 0) {
             rightPartition.add(peekRightTuple);
-            peekRightTuple = getNextRightTuple();
-            if (peekRightTuple == null) {
-                break;
-            }
-            result = Tuple.compareTuples(rightPartition.get(0), peekRightTuple, rightIndices, rightIndices);
+            peekRightTuple = getRightTupleByIndex();
+            if (peekRightTuple == null) break;
         }
     }
 
