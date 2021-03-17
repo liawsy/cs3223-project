@@ -231,6 +231,14 @@ public class PlanCost {
             case JoinType.NESTEDJOIN:
                 joincost = leftpages * rightpages;
                 break;
+            case JoinType.SORTMERGE:
+                // cost to sort left
+                long sortLeftCost = externalSortCost(leftpages, numbuff);
+                // cost to sort right
+                long sortRightCost = externalSortCost(rightpages, numbuff);
+                // merge cost
+                long mergeCost = leftpages + rightpages;
+                joincost = sortLeftCost + sortRightCost + mergeCost;
             case JoinType.BLOCKNESTED:
                 long outerblocks = numbuff - 2;
                 joincost = ((int) Math.ceil(leftpages/outerblocks)) * rightpages;
@@ -244,6 +252,10 @@ public class PlanCost {
         return outtuples;
     }
 
+    private long externalSortCost(long numPages, long numBuff) {
+        int numPass = 1 + (int) Math.ceil(Math.log(Math.ceil(numPages / (1.0 * numBuff))) / Math.log(numBuff - 1) );
+        return numPass * (2 * numPages);
+    }
     protected long getStatistics(OrderBy node) {
         /**
          * IO cost: need 
