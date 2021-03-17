@@ -141,7 +141,7 @@ public class SortMergeJoin extends Join {
                     }
                     int compareLeftTuples = Tuple.compareTuples(peekLeftTuple, leftTuple, leftIndices, leftIndices);
                     // if peekLeft is bigger than current left tuple, create a new partition
-                    if (compareLeftTuples > 0) {
+                    if (compareLeftTuples != 0) {
                         createRightPartition();
                         if (rightPartition.isEmpty()) {
                             eosr = true;
@@ -157,7 +157,7 @@ public class SortMergeJoin extends Join {
                 leftTuple = getNextLeftTuple();
                 if (leftTuple == null) {
                     eosl = true;
-                    return outBatch;
+                    break;
                 }
             } else { // result > 0
                 createRightPartition();
