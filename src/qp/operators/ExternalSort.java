@@ -186,6 +186,11 @@ public class ExternalSort extends Operator {
                 }
             }
 
+            if (minTuple == null) {
+                inputEos[minBatch] = true;
+                break;
+            }
+
             // looks through the rest of the batches
             for (int i = minPtr + 1; i < numRuns; i++) {
                 Batch currBatch = inputBatches[i];
