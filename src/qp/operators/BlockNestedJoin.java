@@ -124,7 +124,7 @@ public class BlockNestedJoin extends Join {
 
                 for (int k = 0; k < numBuff - 2; k++) {
                     Batch leftBatch = (Batch) left.next();
-                    if (leftBatch.isEmpty() || leftBatch == null) {
+                    if (leftBatch == null || leftBatch.isEmpty()) {
                         break;
                     }
                     leftBlock.add(leftBatch);
