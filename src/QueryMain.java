@@ -33,6 +33,7 @@ public class QueryMain {
         Operator root = getQueryPlan(sqlquery);
         printFinalPlan(root, args, in);
         executeQuery(root, args[1]);
+        cleanFiles();
     }
 
     /**
@@ -224,5 +225,15 @@ public class QueryMain {
             }
         }
         out.println();
+    }
+
+    protected static void cleanFiles() {
+        File directory = new File("../classes");
+        for (File f : directory.listFiles()) {
+            String fileName = f.getName();
+            if (fileName.startsWith("sort_") || fileName.startsWith("BNJtemp-") || fileName.startsWith("NJtemp-")) {
+                f.delete();
+            }
+        }
     }
 }

@@ -8,25 +8,24 @@ import qp.utils.Condition;
 import qp.utils.Tuple;
 
 public class SortMergeJoin extends Join {
-    ExternalSort leftSorted;
-    ExternalSort rightSorted;
+    private ExternalSort leftSorted;
+    private ExternalSort rightSorted;
 
-    int batchSize;                    // Number of tuples per out batch
-    ArrayList<Integer> leftIndices;   // Indices of the join attributes in left table
-    ArrayList<Integer> rightIndices;  // Indices of the join attributes in right table
-    Batch outBatch;                   // Buffer page for output
-    Batch leftBatch;                  // Buffer page for left input stream
-    Batch rightBatch;                 // Buffer page for right input stream
+    private int batchSize;                    // Number of tuples per out batch
+    private ArrayList<Integer> leftIndices;   // Indices of the join attributes in left table
+    private ArrayList<Integer> rightIndices;  // Indices of the join attributes in right table
+    private Batch leftBatch;                  // Buffer page for left input stream
+    private Batch rightBatch;                 // Buffer page for right input stream
 
-    int leftPtr;                      // Index pointer for left side buffer
-    int rightPtr;                     // Index pointer for right side buffer
-    boolean eosl;                     // Whether end of stream (left table) is reached
-    boolean eosr;                     // Whether end of stream (right table) is reached
-    Tuple leftTuple;                  // current tuple from left table
-    Tuple rightTuple;                 // current tuple from right table
-    Tuple peekRightTuple;              // next tuple from right table
-    ArrayList<Tuple> rightPartition;  // collection of duplicates on right table
-    int rightPartitionPtr;
+    private int leftPtr;                      // Index pointer for left side buffer
+    private int rightPtr;                     // Index pointer for right side buffer
+    private boolean eosl;                     // Whether end of stream (left table) is reached
+    private boolean eosr;                     // Whether end of stream (right table) is reached
+    private Tuple leftTuple;                  // current tuple from left table
+    private Tuple rightTuple;                 // current tuple from right table
+    private Tuple peekRightTuple;              // next tuple from right table
+    private ArrayList<Tuple> rightPartition;  // collection of duplicates on right table
+    private int rightPartitionPtr;
 
     public SortMergeJoin(Join jn) {
         super(jn.getLeft(), jn.getRight(), jn.getConditionList(), jn.getOpType());
@@ -57,9 +56,6 @@ public class SortMergeJoin extends Join {
 
         leftSorted = new ExternalSort(left, leftAttrs, numBuff);
         rightSorted = new ExternalSort(right, rightAttrs, numBuff);
-
-        leftSorted.setPrefix("SMJ-left_");
-        rightSorted.setPrefix("SMJ-right_");
 
         // open left and right sorted tables
         leftSorted.open();
