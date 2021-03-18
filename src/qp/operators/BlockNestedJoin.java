@@ -49,6 +49,10 @@ public class BlockNestedJoin extends Join {
         /** Number of pages requires for tuples **/
         batchsize = Batch.getPageSize() / tuplesize;
 
+        if (batchsize < 1) {
+            System.err.println("Page size should be larger than tuple size!");
+        }
+
         /** find indices attributes of join conditions **/
         leftindex = new ArrayList<>();
         rightindex = new ArrayList<>();

@@ -230,6 +230,7 @@ public class QueryMain {
     protected static void cleanFiles() {
         File directory = new File("../classes");
         for (File f : directory.listFiles()) {
+            System.out.println("Clearing temp files...");
             String fileName = f.getName();
             if (fileName.startsWith("sort_") || fileName.startsWith("BNJtemp-") || fileName.startsWith("NJtemp-")) {
                 f.delete();
