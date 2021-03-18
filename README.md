@@ -6,6 +6,14 @@ This project models a simple SPJ (Select-Project-Join) query engine, simulating 
 2. Liaw Siew Yee
 3. Pang Jia Da
 
+## Implemented Operators
+In this project, we have implemented the following specifications:
+1. [Block Nested Join](./src/qp/operators/BlockNestedJoin.java)
+2. Sort Merge Join (with External Sort-Merge algorithm)
+3. Distinct
+4. Orderby (ASC and DESC)
+5. Groupby
+
 ## Setting up
 We will use query2.sql as an example. It is reproduced below:
 
@@ -29,27 +37,4 @@ WHERE CUSTOMER.gender="1"
 11. The result of the query should be in `out.txt` in the current folder.
 
 
-## Implemented Operators
-In this project, we have implemented the following specifications:
-1. Block Nested Join
-2. Sort Merge Join (with External Sort-Merge algorithm)
-3. Distinct
-4. Orderby (ASC and DESC)
-5. Groupby
 
-### 1. Block Nested Loop Join
-
-
-### 2. External Sort
-
-
-### 3. Sort Merge Join
-
-
-### 4. Distinct
-
-
-### 5. Groupby
-
-
-### 6. Orderby
