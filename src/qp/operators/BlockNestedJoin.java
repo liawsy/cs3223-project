@@ -122,9 +122,12 @@ public class BlockNestedJoin extends Join {
 
                 leftBlock = new ArrayList<>();
 
-                /* Create outer block for BNJ */
-                while (((leftbatch = left.next()) != null) && leftBlock.size() <= numBuff - 2) {
-                    leftBlock.add((Batch) leftbatch);
+                for (int k = 0; k < numBuff - 2; k++) {
+                    Batch leftBatch = (Batch) left.next();
+                    if (leftBatch.isEmpty() || leftBatch == null) {
+                        break;
+                    }
+                    leftBlock.add(leftBatch);
                 }
 
                 if (leftBlock.isEmpty()) {
@@ -135,8 +138,8 @@ public class BlockNestedJoin extends Join {
                 leftBlockTuples = new ArrayList<>();
 
                 for (Batch leftBatch: leftBlock) {
-                    for (i = 0; i < leftBatch.size(); i++) {
-                        leftBlockTuples.add(leftBatch.get(i));
+                    for (int k = 0; k < leftBatch.size(); k++) {
+                        leftBlockTuples.add(leftBatch.get(k));
                     }
                 }
 
