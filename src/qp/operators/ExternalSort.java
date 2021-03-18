@@ -66,7 +66,7 @@ public class ExternalSort extends Operator {
         tuplesPerBatch = Batch.getPageSize() / tupleSize;
 
         int numSortedRun = createSortedRuns();
-
+        System.out.println("numsorted run " + numSortedRun);
         mergeSortedRuns(numSortedRun);
 
         return true;
@@ -84,13 +84,12 @@ public class ExternalSort extends Operator {
 
             // 1 buffer = 1 batch = 1 page
             // read in as many batches as number of buffers
-            for (int i = 0; i < numBuffer; i++) {
+            for (int i = 0; i < numBuffer && inputBatch != null; i++) {
                 // adds all tuples from input batch to sorted run
                 tuplesInSortedRun.addAll(inputBatch.getTuples());
 
-                inputBatch = base.next();
-                if (inputBatch == null) {
-                    break;
+                if (i != numBuffer - 1) {
+                    inputBatch = base.next();
                 }
             }
             
@@ -185,6 +184,11 @@ public class ExternalSort extends Operator {
                     minBatch = i; 
                     break;
                 }
+            }
+
+            if (minTuple == null) {
+                inputEos[minBatch] = true;
+                break;
             }
 
             // looks through the rest of the batches
