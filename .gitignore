@@ -5,8 +5,7 @@ classes/*.tbl
 classes/*.txt
 classes/BNJtemp-*
 classes/NJtemp-*
-classes/pass_*
-classes/qp/operators/*.class
+classes/sort_*
 
 testcases/*.md
 testcases/*.stat
@@ -18,3 +17,5 @@ testcases/*.txt
 
 .classpath
 .project
+
+.DS_Store

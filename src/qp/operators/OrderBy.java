@@ -23,7 +23,6 @@ public class OrderBy extends Operator {
     ExternalSort sortOp;           // Sort operator for base operator
 
     ArrayList<Attribute> attributeList;   // List of Attributes for Orderby
-    ArrayList<Integer> attributeIndices = new ArrayList<>(); // List of Attribute Indices
 
     int opType;                    // Operator Type
     int order;                     // Order in which tuples should appear
@@ -54,21 +53,12 @@ public class OrderBy extends Operator {
         this.numBuffer = num;
     }
 
-    private void updateAttributeIndices() {
-        for (int i = 0; i < attributeList.size(); i++) {
-            Attribute attribute = attributeList.get(i);
-            attributeIndices.add(this.schema.indexOf(attribute));
-        }
-    }
-
     @Override
     public boolean open() {
 		int tupleSize = this.schema.getTupleSize();
 		this.batchSize = Batch.getPageSize() / tupleSize;
 
 		if (!base.open()) return false;
-
-        updateAttributeIndices();
 
 		/**
 		 * Create the underlying sort operator on the orderby list
