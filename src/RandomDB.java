@@ -91,6 +91,7 @@ public class RandomDB {
                 keytype[i] = tokenizer.nextToken();
                 int typeofkey;
                 if (keytype[i].equals("PK")) {
+                    System.out.println("range: " + range[i] + " " + i);
                     pk = new boolean[range[i]];
                     typeofkey = Attribute.PK;
                 } else if (keytype[i].equals("FK")) {
@@ -129,7 +130,7 @@ public class RandomDB {
                         if (keytype[j].equals("PK")) {
                             int numb = random.nextInt(range[0]);
                             while (pk[numb] == true) {//<--- this is where we get stuck in inf loop when generating more records than INTEGER pk range. If have >1 col of PK, doesn't allow product of all their ranges as max #records
-                                System.out.println("gay");
+                                System.out.println("retrying guess");
                                 numb = random.nextInt(range[0]); 
                             }
                             pk[numb] = true;
