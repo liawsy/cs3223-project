@@ -66,7 +66,6 @@ public class ExternalSort extends Operator {
         tuplesPerBatch = Batch.getPageSize() / tupleSize;
 
         int numSortedRun = createSortedRuns();
-        System.out.println("numsorted run " + numSortedRun);
         mergeSortedRuns(numSortedRun);
 
         return true;
