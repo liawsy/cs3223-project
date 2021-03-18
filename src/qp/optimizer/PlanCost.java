@@ -80,6 +80,8 @@ public class PlanCost {
             return getStatistics((Distinct) node);
         } else if (node.getOpType() == OpType.GROUPBY) {
             return getStatistics((GroupBy) node);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return getStatistics((OrderBy) node);
         }  
         System.out.println("operator is not supported");
         isFeasible = false;
@@ -229,6 +231,18 @@ public class PlanCost {
             case JoinType.NESTEDJOIN:
                 joincost = leftpages * rightpages;
                 break;
+            case JoinType.SORTMERGE:
+                // cost to sort left
+                long sortLeftCost = externalSortCost(leftpages, numbuff);
+                // cost to sort right
+                long sortRightCost = externalSortCost(rightpages, numbuff);
+                // merge cost
+                long mergeCost = leftpages + rightpages;
+                joincost = sortLeftCost + sortRightCost + mergeCost;
+            case JoinType.BLOCKNESTED:
+                long outerblocks = numbuff - 2;
+                joincost = ((int) Math.ceil(leftpages/outerblocks)) * rightpages;
+                break;
             default:
                 System.out.println("join type is not supported");
                 return 0;
@@ -237,6 +251,36 @@ public class PlanCost {
 
         return outtuples;
     }
+
+    private long externalSortCost(long numPages, long numBuff) {
+        int numPass = 1 + (int) Math.ceil(Math.log(Math.ceil(numPages / (1.0 * numBuff))) / Math.log(numBuff - 1) );
+        return numPass * (2 * numPages);
+    }
+    protected long getStatistics(OrderBy node) {
+        /**
+         * IO cost: need 
+         * - #pages of base, |N|
+         * - #buffers, B
+         * - log function, double Math.log(double)
+         * - ceil function, double Math.ceil(double)
+         */
+        
+         //calculating number of output tuples
+         long numouttuples = calculateCost(node.getBase());
+ 
+         //incrementing IO cost
+         int pagecapacity = Batch.getPageSize() / node.getSchema().getTupleSize();//implicit floor bc of integer division
+         int numpages = (int) Math.ceil((double)numouttuples / (double)pagecapacity);
+         //following the generate cost for sort merge
+         long numpasses = 1 + (long)Math.ceil(
+                                        Math.log(Math.ceil((double)numpages / (double)BufferManager.numBuffer)) / 
+                                        Math.log(BufferManager.numBuffer - 1));
+         long numIO = 2 * numpages * numpasses;
+         cost += numIO;
+ 
+         return numouttuples;
+    }
+    
 
     /**
      * Find number of incoming tuples, Using the selectivity find # of output tuples

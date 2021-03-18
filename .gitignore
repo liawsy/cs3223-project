@@ -3,6 +3,9 @@ classes/*.md
 classes/*.stat
 classes/*.tbl
 classes/*.txt
+classes/BNJtemp-*
+classes/NJtemp-*
+classes/sort_*
 
 testcases/*.md
 testcases/*.stat
@@ -14,3 +17,5 @@ testcases/*.txt
 
 .classpath
 .project
+
+.DS_Store

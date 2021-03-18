@@ -22,6 +22,7 @@ public class RandomInitialPlan {
     ArrayList<Condition> selectionlist;   // List of select conditons
     ArrayList<Condition> joinlist;        // List of join conditions
     ArrayList<Attribute> groupbylist;
+    ArrayList<Attribute> orderbylist;
     int numJoin;            // Number of joins in this query
     HashMap<String, Operator> tab_op_hash;  // Table name to the Operator
     Operator root;          // Root of the query plan tree
@@ -33,6 +34,7 @@ public class RandomInitialPlan {
         selectionlist = sqlquery.getSelectionList();
         joinlist = sqlquery.getJoinList();
         groupbylist = sqlquery.getGroupByList();
+        orderbylist = sqlquery.getOrderByList();
         numJoin = joinlist.size();
     }
 
@@ -49,10 +51,6 @@ public class RandomInitialPlan {
      * Called later = higher up in tree
      **/
     public Operator prepareInitialPlan() {
-        if (sqlquery.getOrderByList().size() > 0) {
-            System.err.println("Orderby is not implemented.");
-            System.exit(1);
-        }
         
         tab_op_hash = new HashMap<>();
         createScanOp();
@@ -61,11 +59,15 @@ public class RandomInitialPlan {
             createJoinOp();
         }
         createProjectOp();
+        
+        if (sqlquery.isGroupBy()) {
+            createGroupByOp();
+        }
         if (sqlquery.isDistinct()) {
             createDistinctOp();     
         }
-        if (sqlquery.isGroupBy()) {
-            createGroupByOp();
+        if (sqlquery.isOrderBy()) {
+            createOrderByOp(sqlquery.isDesc());
         }
         return root;
     }
@@ -200,6 +202,19 @@ public class RandomInitialPlan {
             root = new Project(base, projectlist, OpType.PROJECT);
             Schema newSchema = base.getSchema().subSchema(projectlist);
             root.setSchema(newSchema);
+        }
+    }
+
+    public void createOrderByOp(boolean isDesc) {
+        if (!this.orderbylist.isEmpty()) {
+            OrderBy orderby;
+            if (isDesc) {
+                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.DESC, this.orderbylist);
+            } else {
+                orderby = new OrderBy(root, OpType.ORDERBY, OrderByType.ASC, this.orderbylist);
+            }
+            orderby.setSchema(root.getSchema());
+            root = orderby;
         }
     }
 

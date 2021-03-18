@@ -38,7 +38,7 @@ public class RandomOptimizer {
         this.sqlquery = sqlquery;
     }
 
-    /**
+        /**
      * After finding a choice of method for each operator
      * * prepare an execution plan by replacing the methods with
      * * corresponding join operator implementation
@@ -56,6 +56,18 @@ public class RandomOptimizer {
                     nj.setRight(right);
                     nj.setNumBuff(numbuff);
                     return nj;
+                case JoinType.SORTMERGE:
+                    SortMergeJoin smj = new SortMergeJoin((Join) node);
+                    smj.setLeft(left);
+                    smj.setRight(right);
+                    smj.setNumBuff(numbuff);
+                    return smj;
+                case JoinType.BLOCKNESTED:
+                    BlockNestedJoin bnj = new BlockNestedJoin((Join) node);
+                    bnj.setLeft(left);
+                    bnj.setRight(right);
+                    bnj.setNumBuff(numbuff);
+                    return bnj;
                 default:
                     return node;
             }
@@ -74,6 +86,10 @@ public class RandomOptimizer {
         } else if (node.getOpType() == OpType.GROUPBY) {
             Operator base = makeExecPlan(((GroupBy) node).getBase());
             ((GroupBy) node).setBase(base);
+            return node;
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = makeExecPlan(((OrderBy) node).getBase());
+            ((OrderBy) node).setBase(base);
             return node;
         } else {
             return node;
@@ -375,6 +391,8 @@ public class RandomOptimizer {
             return findNodeAt(((Distinct) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.GROUPBY) {
             return findNodeAt(((GroupBy) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return findNodeAt(((OrderBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -405,6 +423,10 @@ public class RandomOptimizer {
             node.setSchema(base.getSchema());
         } else if (node.getOpType() == OpType.GROUPBY) {
             Operator base = ((GroupBy) node).getBase();
+            modifySchema(base);
+            node.setSchema(base.getSchema());
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = ((OrderBy) node).getBase();
             modifySchema(base);
             node.setSchema(base.getSchema());
         } else {
