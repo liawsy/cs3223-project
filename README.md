@@ -9,10 +9,10 @@ This project models a simple SPJ (Select-Project-Join) query engine, simulating 
 ## Implemented Operators
 In this project, we have implemented the following specifications:
 1. [Block Nested Join](./src/qp/operators/BlockNestedJoin.java)
-2. Sort Merge Join (with External Sort-Merge algorithm)
-3. Distinct
-4. Orderby (ASC and DESC)
-5. Groupby
+2. [Sort Merge Join](./src/qp/operators/SortMergeJoin.java) (with [External Sort-Merge algorithm](./src/qp/operators/ExternalSort.java))
+3. [Distinct](./src/qp/operators/Distinct.java)
+4. [Orderby](./src/qp/operators/Orderby.java) (ASC and DESC)
+5. [Groupby](./src/qp/operators/Groupby.java)
 
 ## Setting up
 We will use query2.sql as an example. It is reproduced below:
