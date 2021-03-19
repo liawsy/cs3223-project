@@ -310,49 +310,34 @@ public class PlanCost {
         long outtuples;
         /** Calculate the number of tuples in result **/
         if (exprtype == Condition.EQUAL) {
-            //BUGS: ?this is an estimation. assumption is that numtuples are distributed uniformly across the number of distinct attributes
             outtuples = (long) Math.ceil((double) intuples / (double) numdistinct); 
         } else if (exprtype == Condition.NOTEQUAL) {
             outtuples = (long) Math.ceil(intuples - ((double) intuples / (double) numdistinct));
         } else {
-            //BUGS: ?this is an estimation. assumption is that on average, the attr compared against will be the average value.
-            //every other tuple has 0.5 chance of being GEQ / LEQ the average value
             outtuples = (long) Math.ceil(0.5 * intuples);
         }
 
-        /** Modify the number of distinct values of each attribute
-         ** Assuming the values are distributed uniformly along entire
-         ** relation
-         **/
-        /*
-        //proposed fix, replace next for loop which this code chunk
+        //updating selected-attribute
         Condition cn = node.getCondition();
-        assert(cn.getOpType() == Condition.SELECT);
-        //comparing LHS attribute to RHS string value
-        //LHS is the select attribute affected
-        Attribute attri = cn.getLhs();
-        long oldvalue = ht.get(attri);
+        if (cn.getOpType() != Condition.SELECT) {
+            System.out.println("Error, expecting SELECT node");
+            System.exit(1);
+        }
+        Attribute selectattr = cn.getLhs();
+        long oldvalue = ht.get(selectattr);
         long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
-        ht.put(attri, newvalue);   //BUG: newvalue isn't inserted into ht
-        */
+        ht.put(selectattr, newvalue);  
 
+        //updating non-selected attributes
         for (int i = 0; i < schema.getNumCols(); ++i) {
             Attribute attri = schema.getAttribute(i);
-            long oldvalue = ht.get(attri);
-            //BUG: ?
-            //claim: the expected #distinct will decrease ONLY for the attribute selected on
-            //for other cols, the expted #distinct will remain the same, with fewer occurances of each dist value
-            //E.g., for non-selection col:
-            //assume 100 distinct tuples, distributed uniformly across 1000 tuples in table
-            //each distinct value has expected 10 occurances.
-            //if we remove 0.3 of the tuples uniformly, we still expect
-            //100 distinct tuples, but distributed across 700 tuples, for
-            //7 occurances of each distinct value
-            //
-            //E.g., for selection col: we remove tuples in groups of their attribute column, so #dist should decrease
-            long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
-            ht.put(attri, outtuples);   //BUG: newvalue isn't inserted into ht
+            if (!attri.equals(selectattr)) {    //only make changes for non-selected attributes
+                oldvalue = ht.get(attri);
+                newvalue = Math.min(oldvalue, outtuples);
+                ht.put(attri, newvalue);
+            }
         }
+
         return outtuples;
     }
 
