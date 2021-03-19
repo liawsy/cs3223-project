@@ -429,8 +429,8 @@ public class RandomOptimizer {
             Operator base = ((OrderBy) node).getBase();
             modifySchema(base);
             node.setSchema(base.getSchema());
-        } else {
+        } /*else {
             System.out.println("RandomOptimizer modifySchema() unknown node type: " + node.getOpType());
-        }
+        } */
     }
 }

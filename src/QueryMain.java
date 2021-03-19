@@ -178,7 +178,7 @@ public class QueryMain {
         Batch resultbatch;
         resultbatch = root.next();
         while (resultbatch != null && resultbatch.size() > 0) {    //if operators pepetually return batch of size 0 instead of null, will have infinite loop
-            System.out.println("current result batch size : " + resultbatch.size());
+            // System.out.println("current result batch size : " + resultbatch.size());
             if (resultbatch.size() <= 0) { System.out.println("result size LEQ 0. Might be an operator is not returning null when complete.");} 
             
             for (int i = 0; i < resultbatch.size(); ++i) {
@@ -230,7 +230,7 @@ public class QueryMain {
     protected static void cleanFiles() {
         File directory = new File("../classes");
         for (File f : directory.listFiles()) {
-            System.out.println("Clearing temp files...");
+            // System.out.println("Clearing temp files...");
             String fileName = f.getName();
             if (fileName.startsWith("sort_") || fileName.startsWith("BNJtemp-") || fileName.startsWith("NJtemp-")) {
                 f.delete();

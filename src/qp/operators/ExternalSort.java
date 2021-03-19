@@ -355,7 +355,7 @@ public class ExternalSort extends Operator {
                 outputBatch.add(tuple);
             } catch (Exception e) {
                 isEos = true;
-                System.out.println("FYI: External sort " + e.toString() + " in next().");
+                // System.out.println("FYI: External sort " + e.toString() + " in next().");
                 break;
             } 
         }
