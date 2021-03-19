@@ -14,7 +14,7 @@ In this project, we have implemented the following specifications:
 4. [Orderby](./src/qp/operators/Orderby.java) (ASC and DESC)
 5. [Groupby](./src/qp/operators/Groupby.java)
 
-For more information about the implementation, please refer to [our report](./src/Report.pdf).
+For more information about the implementation, please refer to [our report](./Report.pdf).
 
 ## Setting up
 We will use query2.sql as an example. It is reproduced below:
