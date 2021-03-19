@@ -60,16 +60,22 @@ public class RandomInitialPlan {
         }
         createProjectOp();
         
-        if (sqlquery.isGroupBy()) {
-            createGroupByOp();
-        }
-        if (sqlquery.isDistinct()) {
+        if (sqlquery.isGroupBy() && sqlquery.isDistinct() && !sqlquery.isOrderBy()) {
             createDistinctOp();     
+            createGroupByOp();
+            return root;
+        } else {
+            if (sqlquery.isGroupBy()) {
+                createGroupByOp();
+            }
+            if (sqlquery.isDistinct()) {
+                createDistinctOp();     
+            }
+            if (sqlquery.isOrderBy()) {
+                createOrderByOp(sqlquery.isDesc());
+            }
+            return root;
         }
-        if (sqlquery.isOrderBy()) {
-            createOrderByOp(sqlquery.isDesc());
-        }
-        return root;
     }
 
     public void createGroupByOp() {
