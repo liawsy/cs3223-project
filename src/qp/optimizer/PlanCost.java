@@ -242,8 +242,7 @@ public class PlanCost {
                 break;
             case JoinType.BLOCKNESTED:
                 long outerblocks = numbuff - 2;
-                // joincost = ((int) Math.ceil(leftpages/outerblocks)) * rightpages;
-                joincost = 0;
+                joincost = ((int) Math.ceil(leftpages/outerblocks)) * rightpages;
                 break;
             default:
                 System.out.println("join type is not supported");
