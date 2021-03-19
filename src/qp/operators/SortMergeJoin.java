@@ -39,6 +39,10 @@ public class SortMergeJoin extends Join {
         int tuplesize = schema.getTupleSize();
         batchSize = Batch.getPageSize() / tuplesize;
 
+        if (batchSize < 1) {
+            System.err.println("Page size should be larger than tuple size!");
+        }
+
         ArrayList<Attribute> leftAttrs = new ArrayList<>();
         ArrayList<Attribute> rightAttrs = new ArrayList<>();
 

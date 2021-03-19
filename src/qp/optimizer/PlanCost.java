@@ -239,6 +239,7 @@ public class PlanCost {
                 // merge cost
                 long mergeCost = leftpages + rightpages;
                 joincost = sortLeftCost + sortRightCost + mergeCost;
+                break;
             case JoinType.BLOCKNESTED:
                 long outerblocks = numbuff - 2;
                 joincost = ((int) Math.ceil(leftpages/outerblocks)) * rightpages;
