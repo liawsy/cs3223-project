@@ -8,7 +8,4 @@ java ConvertTxtToTbl AIRCRAFTS
 java ConvertTxtToTbl SCHEDULE
 java ConvertTxtToTbl CERTIFIED
 java ConvertTxtToTbl EMPLOYEES
-move *md*.* ..\..\classes
-move *stat*.* ..\..\classes
-move *tbl*.* ..\..\classes
-move *txt*.* ..\..\classes
+mv *.md *.stat *.tbl *.txt ../../classes

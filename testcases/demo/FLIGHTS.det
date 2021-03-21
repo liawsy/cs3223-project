@@ -1,0 +1,6 @@
+4
+64
+flno INTEGER 201 PK 4
+from STRING 14 NK 28
+to STRING 14 NK 28
+distance INTEGER 20 NK 4
